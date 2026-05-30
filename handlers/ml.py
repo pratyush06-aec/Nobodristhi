@@ -54,6 +54,7 @@ def make_request(messages):
     """Make API request with token and model rotation until success"""
     attempts = 0
     max_attempts = len(TOKENS) * len(MODELS)
+    first_attempt = True
     
     while attempts < max_attempts:
         attempts += 1
@@ -84,6 +85,15 @@ def make_request(messages):
             "max_tokens": 500
         }
         
+        # Log first attempt details
+        if first_attempt:
+            print(f"🔍 First request details:")
+            print(f"  URL: {API_URL}")
+            print(f"  Model: {model}")
+            print(f"  Headers: {list(headers.keys())}")
+            print(f"  Payload keys: {list(payload.keys())}")
+            first_attempt = False
+        
         try:
             response = requests.post(API_URL, json=payload, headers=headers, timeout=30)
             
@@ -101,8 +111,14 @@ def make_request(messages):
             elif response.status_code == 429:
                 print(f"⚠️  Rate limited, trying next model (attempt {attempts}/{max_attempts})...")
                 continue
+            elif response.status_code == 405:
+                # 405 Method Not Allowed - check response for details
+                print(f"❌ 405 Method Not Allowed. Response: {response.text[:200]}")
+                print(f"API URL: {API_URL}, Model: {model}")
+                continue
             else:
                 print(f"⚠️  Request failed with status {response.status_code} (attempt {attempts}/{max_attempts})...")
+                print(f"Response: {response.text[:200]}")
                 continue
                 
         except requests.exceptions.Timeout:
