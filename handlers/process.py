@@ -10,6 +10,16 @@ from database.pool import db
 async def init_tables():
     async with db.token_pool.acquire() as connection:
         await connection.execute('''
+            CREATE TABLE IF NOT EXISTS members (
+                id VARCHAR PRIMARY KEY,
+                name VARCHAR NOT NULL,
+                email VARCHAR NOT NULL,
+                role VARCHAR NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        await connection.execute('''
             CREATE TABLE IF NOT EXISTS raw_reports (
                 raw_id VARCHAR PRIMARY KEY,
                 text TEXT NOT NULL,
