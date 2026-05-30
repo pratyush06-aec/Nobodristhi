@@ -12,12 +12,26 @@ class Database:
         self.supabase_client = None
 
     async def connect(self):
+        # Validate required environment variables
+        host = os.getenv('POSTGRES_TOKEN_HOST')
+        port = os.getenv('POSTGRES_TOKEN_PORT')
+        user = os.getenv('POSTGRES_TOKEN_USER')
+        password = os.getenv('POSTGRES_TOKEN_PASSWORD')
+        
+        if not all([host, port, user, password]):
+            print("Error: Missing PostgreSQL environment variables:")
+            print(f"  POSTGRES_TOKEN_HOST: {'✓' if host else '✗ MISSING'}")
+            print(f"  POSTGRES_TOKEN_PORT: {'✓' if port else '✗ MISSING'}")
+            print(f"  POSTGRES_TOKEN_USERNAME: {'✓' if user else '✗ MISSING'}")
+            print(f"  POSTGRES_TOKEN_PASSWORD: {'✓' if password else '✗ MISSING'}")
+            raise ValueError("Missing required PostgreSQL credentials in .env file")
+        
         self.token_pool = await asyncpg.create_pool(
-            host=os.getenv('POSTGRES_TOKEN_HOST'),
-            port=int(os.getenv('POSTGRES_TOKEN_PORT')),
+            host=host,
+            port=int(port),
             database='postgres',
-            user=os.getenv('POSTGRES_TOKEN_USERNAME'),
-            password=os.getenv('POSTGRES_TOKEN_PASSWORD'),
+            user=user,
+            password=password,
             ssl='require',
             timeout=10,
             min_size=1,

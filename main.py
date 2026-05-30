@@ -28,9 +28,11 @@ def health_check():
     return jsonify({'status': 'ok', 'message': 'Server is running'})
 
 async def startup():
+    db_connected = False
     try:
         await db.connect()
         print("Database connected successfully")
+        db_connected = True
         
         await init_tables()
         print("Tables initialized successfully")
@@ -38,13 +40,21 @@ async def startup():
         asyncio.create_task(processing_task.start())
         print("Processing task started")
     except Exception as e:
-        print(f"Error during startup: {e}")
+        print(f"\n❌ Error during startup: {e}")
+        if not db_connected:
+            print("\n⚠️  Database connection failed!")
+            print("Please check your .env file and ensure you have:")
+            print("  - POSTGRES_TOKEN_HOST (e.g., pg-xxx.neon.tech)")
+            print("  - POSTGRES_TOKEN_PORT (usually 5432)")
+            print("  - POSTGRES_TOKEN_USERNAME")
+            print("  - POSTGRES_TOKEN_PASSWORD")
+            print("\nServer will start, but API endpoints will fail without database connection.")
+        else:
+            print(f"\nServer failed to initialize properly.")
 
 if __name__ == '__main__':
     PORT = int(os.getenv('PORT', 5000))
     
-    # Run startup async function
     asyncio.run(startup())
     
-    # Start Flask app
     app.run(host='0.0.0.0', port=PORT, debug=True)
