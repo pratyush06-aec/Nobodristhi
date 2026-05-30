@@ -26,10 +26,19 @@ class Database:
             statement_cache_size=0
         )
         
-        self.supabase_client = create_client(
-            os.getenv('SUPABASE_URL'),
-            os.getenv('SUPABASE_KEY')
-        )
+        try:
+            supabase_url = os.getenv('SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                print("Warning: SUPABASE_URL or SUPABASE_KEY not set in environment")
+                self.supabase_client = None
+            else:
+                self.supabase_client = create_client(supabase_url, supabase_key)
+                print("Supabase client initialized successfully")
+        except Exception as e:
+            print(f"Error initializing Supabase client: {e}")
+            self.supabase_client = None
 
     async def refresh_connection(self):
         while True:

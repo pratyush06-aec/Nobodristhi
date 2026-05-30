@@ -14,9 +14,9 @@ async def init_tables():
                 raw_id VARCHAR PRIMARY KEY,
                 text TEXT NOT NULL,
                 location JSONB NOT NULL,
-                reporter_id VARCHAR NOT NULL,
-                img_url JSONB,
-                source VARCHAR,
+                reporter_id TEXT NOT NULL,
+                img_url TEXT,
+                source TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -118,7 +118,6 @@ class RawProcessor:
         async with db.token_pool.acquire() as connection:
             img_url_jsonb = json.dumps(img_url) if img_url else []
             
-            # Generate 16-character processed_id
             characters = string.ascii_letters + string.digits
             processed_id = ''.join(random.choice(characters) for _ in range(16))
             
