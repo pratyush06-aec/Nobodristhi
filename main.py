@@ -23,23 +23,30 @@ app.register_blueprint(member_bp)
 app.register_blueprint(raw_bp)
 app.register_blueprint(processed_bp)
 
+# Initialize on app startup (stored in app.config, not global variables)
+app.config['DB_INITIALIZED'] = False
+
 @app.route('/', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok', 'message': 'Server is running'})
 
-@app.before_first_request
+@app.before_request
 def startup():
-    try:
-        asyncio.run(db.connect())
-        print("Database connected successfully")
-        
-        asyncio.run(init_tables())
-        print("Tables initialized successfully")
-        
-        asyncio.create_task(processing_task.start())
-        print("Processing task started")
-    except Exception as e:
-        print(f"Error during startup: {e}")
+    """Initialize database and processing task on first request."""
+    if not app.config['DB_INITIALIZED']:
+        try:
+            asyncio.run(db.connect())
+            print("Database connected successfully")
+            
+            asyncio.run(init_tables())
+            print("Tables initialized successfully")
+            
+            asyncio.create_task(processing_task.start())
+            print("Processing task started")
+            
+            app.config['DB_INITIALIZED'] = True
+        except Exception as e:
+            print(f"Error during startup: {e}")
 
 if __name__ == '__main__':
     PORT = int(os.getenv('PORT', 5000))
