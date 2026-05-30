@@ -23,30 +23,23 @@ app.register_blueprint(member_bp)
 app.register_blueprint(raw_bp)
 app.register_blueprint(processed_bp)
 
-_db_connected = False
-_task_started = False
-
 @app.route('/', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok', 'message': 'Server is running'})
 
-@app.before_request
-def connect_database():
-    global _db_connected, _task_started
-    if not _db_connected:
-        try:
-            asyncio.run(db.connect())
-            print("Database connected successfully")
-            _db_connected = True
-            
-            asyncio.run(init_tables())
-            
-            if not _task_started:
-                asyncio.create_task(processing_task.start())
-                _task_started = True
-                print("Processing task started")
-        except Exception as e:
-            print(f"Error connecting to database: {e}")
+@app.before_first_request
+def startup():
+    try:
+        asyncio.run(db.connect())
+        print("Database connected successfully")
+        
+        asyncio.run(init_tables())
+        print("Tables initialized successfully")
+        
+        asyncio.create_task(processing_task.start())
+        print("Processing task started")
+    except Exception as e:
+        print(f"Error during startup: {e}")
 
 if __name__ == '__main__':
     PORT = int(os.getenv('PORT', 5000))
