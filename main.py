@@ -1,9 +1,13 @@
 import asyncio
+import os
 from flask import Flask
 from flask_cors import CORS
 from routes.health import bp
 from routes.member import bp as member_bp
 from database import db
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -30,4 +34,5 @@ def connect_database():
             print(f"Error connecting to database: {e}")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6969, debug=True)
+    PORT = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=PORT, debug=True)
