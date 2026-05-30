@@ -20,7 +20,7 @@ app.register_blueprint(member_bp)
 
 _db_connected = False
 
-@app.route('/health', methods=['GET'])
+@app.route('/', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok', 'message': 'Server is running'})
 
