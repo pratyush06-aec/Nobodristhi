@@ -25,7 +25,12 @@ def load_tokens():
 load_tokens()
 
 API_URL = "https://openrouter.io/api/v1/chat/completions"
-MODEL = "openai/gpt-4o-mini:free"
+MODELS = [
+    "openai/gpt-oss-120b:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free"
+]
+MODEL_INDEX = 0
 
 def get_next_token():
     """Get the next available token in rotation"""
@@ -36,14 +41,35 @@ def get_next_token():
     TOKEN_INDEX = (TOKEN_INDEX + 1) % len(TOKENS)
     return token
 
-def make_request(messages, max_retries=3):
-    """Make API request with token rotation on failure"""
-    for attempt in range(max_retries):
+def get_next_model():
+    """Get the next available model in rotation"""
+    global MODEL_INDEX
+    if not MODELS:
+        return None
+    model = MODELS[MODEL_INDEX]
+    MODEL_INDEX = (MODEL_INDEX + 1) % len(MODELS)
+    return model
+
+def make_request(messages):
+    """Make API request with token and model rotation until success"""
+    attempts = 0
+    max_attempts = len(TOKENS) * len(MODELS)
+    
+    while attempts < max_attempts:
+        attempts += 1
         token = get_next_token()
+        model = get_next_model()
+        
         if not token:
             return {
                 "success": False,
                 "error": "No tokens available"
+            }
+        
+        if not model:
+            return {
+                "success": False,
+                "error": "No models available"
             }
         
         headers = {
@@ -52,7 +78,7 @@ def make_request(messages, max_retries=3):
         }
         
         payload = {
-            "model": MODEL,
+            "model": model,
             "messages": messages,
             "temperature": 0.7,
             "max_tokens": 500
@@ -66,28 +92,29 @@ def make_request(messages, max_retries=3):
                 # Extract the content from OpenRouter response
                 if 'choices' in result and len(result['choices']) > 0:
                     content = result['choices'][0]['message']['content']
+                    print(f"✅ Success with model {model} on attempt {attempts}")
                     return content
                 return result
             elif response.status_code == 401:
-                print(f"❌ Token {TOKEN_INDEX} invalid, trying next...")
+                print(f"❌ Token invalid, trying next (attempt {attempts}/{max_attempts})...")
                 continue
             elif response.status_code == 429:
-                print(f"⚠️  Rate limited on token {TOKEN_INDEX}, trying next...")
+                print(f"⚠️  Rate limited, trying next model (attempt {attempts}/{max_attempts})...")
                 continue
             else:
-                print(f"⚠️  Request failed with status {response.status_code}, trying next...")
+                print(f"⚠️  Request failed with status {response.status_code} (attempt {attempts}/{max_attempts})...")
                 continue
                 
         except requests.exceptions.Timeout:
-            print(f"⚠️  Request timeout on token {TOKEN_INDEX}, trying next...")
+            print(f"⚠️  Request timeout (attempt {attempts}/{max_attempts})...")
             continue
         except Exception as e:
-            print(f"⚠️  Error on token {TOKEN_INDEX}: {str(e)}, trying next...")
+            print(f"⚠️  Error: {str(e)} (attempt {attempts}/{max_attempts})...")
             continue
     
     return {
         "success": False,
-        "error": f"Failed after {max_retries} attempts"
+        "error": f"Failed after trying all {max_attempts} token/model combinations"
     }
 
 def optimize_query(text):
