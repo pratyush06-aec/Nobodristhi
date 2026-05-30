@@ -1,6 +1,6 @@
 import json
 import string
-import random
+import secrets
 import threading
 import time
 from handlers.ml import optimize_query, update_query, check_similarity
@@ -277,7 +277,7 @@ class RawProcessor:
             img_url_jsonb = json.dumps(img_url) if img_url else json.dumps([])
             
             characters = string.ascii_letters + string.digits
-            processed_id = ''.join(random.choice(characters) for _ in range(16))
+            processed_id = ''.join(secrets.choice(characters) for _ in range(16))
             
             cur.execute('''
                 INSERT INTO processed_reports 
