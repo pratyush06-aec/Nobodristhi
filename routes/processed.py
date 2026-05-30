@@ -2,30 +2,18 @@ from flask import Blueprint, request, jsonify
 import asyncio
 import json
 from database.pool import db
-import nest_asyncio
-
-# Allow nested event loops for Flask async operations
-nest_asyncio.apply()
 
 bp = Blueprint('processed', __name__, url_prefix='/processed')
 
-def run_async(coro):
-    """Helper function to run async code safely in Flask context"""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
-    return loop.run_until_complete(coro)
+def run_async_in_background(coro):
+    """Run async code in the background event loop"""
+    from main import run_async_in_background as main_run_async
+    return main_run_async(coro)
 
 @bp.route('/', methods=['GET'])
 def get_all_processed():
     try:
-        result = run_async(fetch_all_processed_reports())
+        result = run_async_in_background(fetch_all_processed_reports())
         
         return jsonify(result), 200
         
@@ -76,7 +64,7 @@ def delete():
                 'message': 'Missing required field: processed_id'
                 }), 400
         
-        result = run_async(delete_processed_report(processed_id))
+        result = run_async_in_background(delete_processed_report(processed_id))
         
         status_code = 404 if not result.get('success') else 200
         return jsonify(result), status_code
@@ -99,7 +87,7 @@ def report():
                 'message': 'Missing required field: processed_id'
                 }), 400
         
-        result = run_async(fetch_processed_report_by_id(processed_id))
+        result = run_async_in_background(fetch_processed_report_by_id(processed_id))
         
         if not result.get('success'):
             return jsonify(result), 404
