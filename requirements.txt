@@ -4,3 +4,4 @@ python-dotenv
 asyncpg
 supabase
 requests
+flask[async]

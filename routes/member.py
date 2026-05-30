@@ -4,13 +4,8 @@ from database.pool import db
 
 bp = Blueprint('member', __name__, url_prefix='/member')
 
-def run_async_in_background(coro):
-    """Run async code in the background event loop"""
-    from main import run_async_in_background as main_run_async
-    return main_run_async(coro)
-
 @bp.route('/login', methods=['POST'])
-def login():
+async def login():
     try:
         print("\n🔵 [MEMBER LOGIN] Request received")
         
@@ -35,7 +30,7 @@ def login():
         print("✅ [MEMBER LOGIN] All fields validated successfully")
         
         print("💾 [MEMBER LOGIN] Calling save_member function...")
-        result = run_async_in_background(save_member(member_id, name, email, role))
+        result = await save_member(member_id, name, email, role)
         print(f"✅ [MEMBER LOGIN] save_member completed: {result}")
         
         status_code = 409 if not result.get('success') else 201
@@ -105,7 +100,7 @@ async def save_member(member_id, name, email, role):
         raise
 
 @bp.route('/delete', methods=['POST'])
-def delete():
+async def delete():
     try:
         print("\n🔵 [MEMBER DELETE] Request received")
         
@@ -127,7 +122,7 @@ def delete():
         print("✅ [MEMBER DELETE] member_id validated successfully")
         
         print("🗑️  [MEMBER DELETE] Calling delete_member function...")
-        result = run_async_in_background(delete_member(member_id))
+        result = await delete_member(member_id)
         print(f"✅ [MEMBER DELETE] delete_member completed: {result}")
         
         status_code = 404 if not result.get('success') else 200

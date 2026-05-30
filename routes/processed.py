@@ -5,15 +5,10 @@ from database.pool import db
 
 bp = Blueprint('processed', __name__, url_prefix='/processed')
 
-def run_async_in_background(coro):
-    """Run async code in the background event loop"""
-    from main import run_async_in_background as main_run_async
-    return main_run_async(coro)
-
 @bp.route('/', methods=['GET'])
-def get_all_processed():
+async def get_all_processed():
     try:
-        result = run_async_in_background(fetch_all_processed_reports())
+        result = await fetch_all_processed_reports()
         
         return jsonify(result), 200
         
@@ -53,7 +48,7 @@ async def fetch_all_processed_reports():
     }
 
 @bp.route('/delete', methods=['POST'])
-def delete():
+async def delete():
     try:
         data = request.get_json()
         processed_id = data.get('processed_id')
@@ -64,7 +59,7 @@ def delete():
                 'message': 'Missing required field: processed_id'
                 }), 400
         
-        result = run_async_in_background(delete_processed_report(processed_id))
+        result = await delete_processed_report(processed_id)
         
         status_code = 404 if not result.get('success') else 200
         return jsonify(result), status_code
@@ -76,7 +71,7 @@ def delete():
             }), 500
 
 @bp.route('/report', methods=['POST'])
-def report():
+async def report():
     try:
         data = request.get_json()
         processed_id = data.get('processed_id')
@@ -87,7 +82,7 @@ def report():
                 'message': 'Missing required field: processed_id'
                 }), 400
         
-        result = run_async_in_background(fetch_processed_report_by_id(processed_id))
+        result = await fetch_processed_report_by_id(processed_id)
         
         if not result.get('success'):
             return jsonify(result), 404

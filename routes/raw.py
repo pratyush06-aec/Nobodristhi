@@ -8,13 +8,8 @@ from database.pool import db
 
 bp = Blueprint('raw', __name__, url_prefix='/raw')
 
-def run_async_in_background(coro):
-    """Run async code in the background event loop"""
-    from main import run_async_in_background as main_run_async
-    return main_run_async(coro)
-
 @bp.route('/report', methods=['POST'])
-def report():
+async def report():
     try:
         text = request.form.get('text')
         latitude = request.form.get('latitude')
@@ -42,14 +37,14 @@ def report():
         
         img_url = None
         if img_file and img_file.filename:
-            img_url = run_async_in_background(upload_image_to_supabase(img_file))
+            img_url = await upload_image_to_supabase(img_file)
             if not img_url:
                 return jsonify({
                     'success': False,
                     'message': 'Failed to upload image'
                     }), 500
         
-        result = run_async_in_background(save_raw_report(text, location, reporter_id, img_url, source))
+        result = await save_raw_report(text, location, reporter_id, img_url, source)
         
         status_code = 201 if result.get('success') else 500
         return jsonify(result), status_code
@@ -108,9 +103,9 @@ async def save_raw_report(text, location, reporter_id, img_url=None, source=None
     }
 
 @bp.route('/', methods=['GET'])
-def get_all_reports():
+async def get_all_reports():
     try:
-        result = run_async_in_background(fetch_all_raw_reports())
+        result = await fetch_all_raw_reports()
         
         return jsonify(result), 200
         
@@ -159,7 +154,7 @@ async def fetch_all_raw_reports():
     }
 
 @bp.route('/delete', methods=['POST'])
-def delete():
+async def delete():
     try:
         data = request.get_json()
         raw_id = data.get('raw_id')
@@ -170,7 +165,7 @@ def delete():
                 'message': 'Missing required field: raw_id'
                 }), 400
         
-        result = run_async_in_background(delete_raw_report(raw_id))
+        result = await delete_raw_report(raw_id)
         
         status_code = 404 if not result.get('success') else 200
         return jsonify(result), status_code
