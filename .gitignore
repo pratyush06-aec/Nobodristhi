@@ -1,0 +1,6 @@
+template.html
+pipeline.txt
+__pycache__/
+*.pyc
+.env
+cloner.py

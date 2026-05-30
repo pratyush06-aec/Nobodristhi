@@ -1,0 +1,33 @@
+import asyncio
+from flask import Flask
+from flask_cors import CORS
+from routes.health import bp
+from routes.member import bp as member_bp
+from database import db
+
+app = Flask(__name__)
+
+CORS(app, 
+     origins="*",
+     allow_headers="*",
+     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+     supports_credentials=True)
+
+app.register_blueprint(bp)
+app.register_blueprint(member_bp)
+
+_db_connected = False
+
+@app.before_request
+def connect_database():
+    global _db_connected
+    if not _db_connected:
+        try:
+            asyncio.run(db.connect())
+            print("Database connected successfully")
+            _db_connected = True
+        except Exception as e:
+            print(f"Error connecting to database: {e}")
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=6969, debug=True)
