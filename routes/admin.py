@@ -70,7 +70,6 @@ def get_all_complete_news():
              description, location, reporter_id, img_url, source, 
              created_at, approved_at) = row
             
-            # Parse location if it's a string JSON
             if isinstance(location, str):
                 try:
                     location = json.loads(location)
@@ -118,6 +117,7 @@ def move_to_complete(processed_id):
                 reporter_id TEXT NOT NULL,
                 img_url TEXT,
                 source TEXT,
+                is_breaking BOOLEAN,
                 created_at TIMESTAMP,
                 approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -145,16 +145,19 @@ def move_to_complete(processed_id):
         
         complete_id = generate_complete_id()
         
+        is_breaking = breaking.lower() in ['true', '1', 'yes'] if breaking else False
+        
         cur.execute('''
             INSERT INTO complete_news 
             (complete_id, processed_id, raw_id, breaking, summary, description, 
-             location, reporter_id, img_url, source, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             location, reporter_id, img_url, source, is_breaking, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (complete_id, p_id, raw_id, breaking, summary, description, 
-              location, reporter_id, img_url, source, created_at))
+              location, reporter_id, img_url, source, is_breaking, created_at))
         
         cur.execute('''
-            DELETE FROM processed_reports
+            UPDATE processed_reports
+            SET is_approved = 1
             WHERE processed_id = %s
         ''', (processed_id,))
         

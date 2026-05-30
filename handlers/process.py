@@ -53,6 +53,7 @@ def init_tables():
                 reporter_id TEXT NOT NULL,
                 img_url JSONB,
                 source TEXT,
+                is_approved INT DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -71,6 +72,7 @@ def init_tables():
                 reporter_id TEXT NOT NULL,
                 img_url TEXT,
                 source TEXT,
+                is_breaking BOOLEAN,
                 created_at TIMESTAMP,
                 approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
