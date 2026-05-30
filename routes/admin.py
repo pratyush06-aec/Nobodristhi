@@ -14,6 +14,7 @@ def generate_complete_id():
 def approve_news():
     try:
         processed_id = request.args.get('processed_id')
+        img_index = request.args.get('img_index', type=int)
         
         if not processed_id:
             return jsonify({
@@ -21,7 +22,13 @@ def approve_news():
                 'message': 'Missing required parameter: processed_id'
             }), 400
         
-        result = move_to_complete(processed_id)
+        if img_index is None:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required parameter: img_index (image selection required)'
+            }), 400
+        
+        result = move_to_complete(processed_id, img_index)
         status_code = 404 if not result.get('success') else 200
         return jsonify(result), status_code
         
@@ -120,7 +127,7 @@ def get_all_complete_news():
         if conn:
             db.return_connection(conn)
 
-def move_to_complete(processed_id):
+def move_to_complete(processed_id, img_index=None):
     conn = None
     try:
         conn = db.get_connection()
@@ -166,6 +173,33 @@ def move_to_complete(processed_id):
         
         complete_id = generate_complete_id()
         
+        final_img_url = None
+        if img_index is not None and img_url:
+            try:
+                if isinstance(img_url, list):
+                    if 0 <= img_index < len(img_url):
+                        final_img_url = img_url[img_index]
+                    else:
+                        return {
+                            'success': False,
+                            'message': f'Image index {img_index} out of range. Available images: 0-{len(img_url)-1}'
+                        }
+                else:
+                    # If it's a string, parse it first
+                    img_list = json.loads(img_url) if isinstance(img_url, str) else img_url
+                    if isinstance(img_list, list) and 0 <= img_index < len(img_list):
+                        final_img_url = img_list[img_index]
+                    else:
+                        return {
+                            'success': False,
+                            'message': f'Invalid image index or no images available'
+                        }
+            except Exception as e:
+                return {
+                    'success': False,
+                    'message': f'Error processing image index: {str(e)}'
+                }
+        
         is_breaking = breaking.lower() in ['true', '1', 'yes'] if breaking else False
         
         cur.execute('''
@@ -174,7 +208,7 @@ def move_to_complete(processed_id):
              location, reporter_id, img_url, source, is_breaking, created_at)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (complete_id, p_id, raw_id, breaking, summary, description, 
-              location, reporter_id, img_url, source, is_breaking, created_at))
+              location, reporter_id, final_img_url, source, is_breaking, created_at))
         
         cur.execute('''
             UPDATE processed_reports
