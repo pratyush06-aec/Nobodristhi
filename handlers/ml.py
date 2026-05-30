@@ -5,7 +5,6 @@ import os
 
 load_dotenv()
 
-# Load all tokens from tokens.json
 TOKENS = []
 TOKEN_INDEX = 0
 
@@ -16,12 +15,9 @@ def load_tokens():
         with open(token_file, 'r') as f:
             token_data = json.load(f)
             TOKENS = [t['token'] for t in token_data]
-            print(f"✅ Loaded {len(TOKENS)} tokens from tokens.json")
     except Exception as e:
-        print(f"❌ Error loading tokens.json: {e}")
         TOKENS = []
 
-# Initialize tokens on import
 load_tokens()
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -51,7 +47,6 @@ def get_next_model():
     return model
 
 def make_request(messages):
-    """Make API request with token and model rotation until success"""
     attempts = 0
     max_attempts = len(TOKENS) * len(MODELS)
     first_attempt = True
@@ -82,54 +77,22 @@ def make_request(messages):
             "model": model,
             "messages": messages,
             "temperature": 0,
-            "max_tokens": 500
+            "max_tokens": 1000
         }
-        
-        # Log first attempt details
-        if first_attempt:
-            print(f"🔍 First request details:")
-            print(f"  URL: {API_URL}")
-            print(f"  Model: {model}")
-            print(f"  Headers: {list(headers.keys())}")
-            print(f"  Payload keys: {list(payload.keys())}")
-            print(f"  Messages: {len(messages)} message(s)")
-            first_attempt = False
         
         try:
             response = requests.post(API_URL, json=payload, headers=headers, timeout=30)
             
             if response.status_code == 200:
                 result = response.json()
-                # Extract the content from OpenRouter response
                 if 'choices' in result and len(result['choices']) > 0:
                     content = result['choices'][0]['message']['content']
-                    print(f"✅ Success with model {model} on attempt {attempts}")
                     return content
                 return result
-            elif response.status_code == 401:
-                print(f"❌ Token invalid, trying next (attempt {attempts}/{max_attempts})...")
-                continue
-            elif response.status_code == 429:
-                print(f"⚠️  Rate limited, trying next model (attempt {attempts}/{max_attempts})...")
-                continue
-            elif response.status_code == 405:
-                # 405 Method Not Allowed - check response for details
-                error_msg = response.text[:200] if response.text else "No response body"
-                print(f"❌ 405 Method Not Allowed")
-                print(f"   URL: {API_URL}")
-                print(f"   Model: {model}")
-                print(f"   Error: {error_msg}")
-                continue
             else:
-                print(f"⚠️  Request failed with status {response.status_code} (attempt {attempts}/{max_attempts})...")
-                print(f"Response: {response.text[:200]}")
                 continue
                 
-        except requests.exceptions.Timeout:
-            print(f"⚠️  Request timeout (attempt {attempts}/{max_attempts})...")
-            continue
-        except Exception as e:
-            print(f"⚠️  Error: {str(e)} (attempt {attempts}/{max_attempts})...")
+        except (requests.exceptions.Timeout, Exception):
             continue
     
     return {
@@ -141,7 +104,7 @@ def optimize_query(text):
     messages = [
         {
             "role": "system",
-            "content": "You are a news analyzer. Process short news snippets (minimum 10-15 words) and return a Python dict with the following keys: 'breaking' (string - compelling headline if it's breaking news, None otherwise), 'summary' (string - exactly 20-30 words overview), 'description' (string - exactly 60-100 words detailed explanation). Return ONLY the Python dict, nothing else."
+            "content": "You are a news analyzer. Process short news snippets (minimum 10-15 words) and return a Python dict with the following keys: 'breaking' (string - compelling headline), 'summary' (string - exactly 20-30 words overview), 'description' (string - exactly 60-100 words detailed explanation). Return ONLY the Python dict, nothing else."
         },
         {
             "role": "user",
@@ -164,7 +127,7 @@ def update_query(text, breaking, summary, description):
     messages = [
         {
             "role": "system",
-            "content": "You are a news analyzer. Process short news snippets (minimum 10-15 words) and return a Python dict with the following keys: 'breaking' (string - compelling headline if it's breaking news, None otherwise), 'summary' (string - exactly 20-30 words overview), 'description' (string - exactly 60-100 words detailed explanation). Return ONLY the Python dict, nothing else."
+            "content": "You are a news analyzer. Process short news snippets (minimum 10-15 words) and return a Python dict with the following keys: 'breaking' (string - compelling headline), 'summary' (string - exactly 20-30 words overview), 'description' (string - exactly 60-100 words detailed explanation). Return ONLY the Python dict, nothing else."
         },
         {
             "role": "user",
@@ -201,11 +164,9 @@ def check_similarity(text1, text2):
         if isinstance(result, str):
             result = json.loads(result)
         
-        # Parse result and return boolean
         if isinstance(result, dict) and 'is_similar' in result:
             return bool(result['is_similar'])
         
         return False
     except Exception as e:
-        print(f"❌ Similarity check error: {str(e)}")
         return False

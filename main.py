@@ -1,5 +1,6 @@
 import os
-from flask import Flask, jsonify
+import logging
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from routes.member import bp as member_bp
 from routes.raw import bp as raw_bp
@@ -11,6 +12,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+
+# Suppress noisy werkzeug logging for malformed requests
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 # Configure CORS
 CORS(app, 
@@ -25,9 +30,29 @@ app.register_blueprint(member_bp)
 app.register_blueprint(raw_bp)
 app.register_blueprint(processed_bp)
 
+@app.before_request
+def validate_request():
+    """Validate incoming requests and reject obviously malformed ones"""
+    # Allow preflight CORS requests
+    if request.method == 'OPTIONS':
+        return None
+    
+    # Validate that request has proper headers
+    if request.method in ['POST', 'PUT', 'PATCH']:
+        content_type = request.headers.get('Content-Type', '')
+        if not content_type and not request.files:
+            return jsonify({'success': False, 'message': 'Invalid Content-Type'}), 400
+    
+    return None
+
 @app.route('/', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok', 'message': 'Server is running'}), 200
+
+@app.errorhandler(400)
+def bad_request(e):
+    """Handle bad requests silently without logging spam"""
+    return jsonify({'success': False, 'message': 'Bad request'}), 400
 
 @app.errorhandler(500)
 def internal_error(e):

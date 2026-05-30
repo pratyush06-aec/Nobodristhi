@@ -22,5 +22,4 @@ def search_image(query):
         else:
             return []
     except Exception as e:
-        print(f"Error searching images: {e}")
         return []
