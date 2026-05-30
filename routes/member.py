@@ -1,8 +1,25 @@
 from flask import Blueprint, request, jsonify
 import asyncio
 from database.pool import db
+import nest_asyncio
+
+# Allow nested event loops for Flask async operations
+nest_asyncio.apply()
 
 bp = Blueprint('member', __name__, url_prefix='/member')
+
+def run_async(coro):
+    """Helper function to run async code safely in Flask context"""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    return loop.run_until_complete(coro)
 
 @bp.route('/login', methods=['POST'])
 def login():
@@ -30,7 +47,7 @@ def login():
         print("✅ [MEMBER LOGIN] All fields validated successfully")
         
         print("💾 [MEMBER LOGIN] Calling save_member function...")
-        result = asyncio.run(save_member(member_id, name, email, role))
+        result = run_async(save_member(member_id, name, email, role))
         print(f"✅ [MEMBER LOGIN] save_member completed: {result}")
         
         status_code = 409 if not result.get('success') else 201
@@ -122,7 +139,7 @@ def delete():
         print("✅ [MEMBER DELETE] member_id validated successfully")
         
         print("🗑️  [MEMBER DELETE] Calling delete_member function...")
-        result = asyncio.run(delete_member(member_id))
+        result = run_async(delete_member(member_id))
         print(f"✅ [MEMBER DELETE] delete_member completed: {result}")
         
         status_code = 404 if not result.get('success') else 200
