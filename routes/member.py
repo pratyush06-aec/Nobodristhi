@@ -14,7 +14,10 @@ def login():
         role = data.get('role')
         
         if not all([member_id, name, email, role]):
-            return jsonify({'error': 'Missing required fields: id, name, email, role'}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Missing required fields: id, name, email, role'
+                }), 400
         
         result = asyncio.run(save_member(member_id, name, email, role))
         
@@ -58,4 +61,50 @@ async def save_member(member_id, name, email, role):
     return {
         "success": True,
         'message': 'Member saved successfully'
+    }
+
+@bp.route('/delete', methods=['POST'])
+def delete():
+    try:
+        data = request.get_json()
+        member_id = data.get('id')
+        
+        if not member_id:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required field: id'
+                }), 400
+        
+        result = asyncio.run(delete_member(member_id))
+        
+        status_code = 404 if not result.get('success') else 200
+        return jsonify(result), status_code
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+            }), 500
+
+async def delete_member(member_id):
+    async with db.token_pool.acquire() as connection:
+        existing_member = await connection.fetchrow(
+            'SELECT id FROM members WHERE id = $1',
+            member_id
+        )
+        
+        if not existing_member:
+            return {
+                "success": False,
+                'message': 'Member not found'
+            }
+        
+        await connection.execute(
+            'DELETE FROM members WHERE id = $1',
+            member_id
+        )
+    
+    return {
+        "success": True,
+        'message': 'Member deleted successfully'
     }
