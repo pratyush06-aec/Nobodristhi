@@ -31,6 +31,27 @@ def approve_news():
             'message': str(e)
         }), 500
 
+@bp.route('/reject', methods=['GET'])
+def reject_news():
+    try:
+        processed_id = request.args.get('processed_id')
+        
+        if not processed_id:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required parameter: processed_id'
+            }), 400
+        
+        result = mark_as_rejected(processed_id)
+        status_code = 404 if not result.get('success') else 200
+        return jsonify(result), status_code
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @bp.route('/list', methods=['GET'])
 def list_complete_news():
     try:
@@ -169,6 +190,51 @@ def move_to_complete(processed_id):
             'message': 'Report approved and moved to complete_news',
             'complete_id': complete_id,
             'processed_id': processed_id
+        }
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            db.return_connection(conn)
+
+def mark_as_rejected(processed_id):
+    conn = None
+    try:
+        conn = db.get_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            SELECT processed_id FROM processed_reports
+            WHERE processed_id = %s
+        ''', (processed_id,))
+        
+        report = cur.fetchone()
+        
+        if not report:
+            conn.commit()
+            cur.close()
+            return {
+                'success': False,
+                'message': 'Processed report not found'
+            }
+        
+        cur.execute('''
+            UPDATE processed_reports
+            SET is_approved = 2
+            WHERE processed_id = %s
+        ''', (processed_id,))
+        
+        conn.commit()
+        cur.close()
+        
+        return {
+            'success': True,
+            'message': 'Report rejected successfully',
+            'processed_id': processed_id,
+            'is_approved': 2
         }
         
     except Exception as e:
