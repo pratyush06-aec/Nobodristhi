@@ -1,7 +1,6 @@
 Flask
 Flask-CORS
 python-dotenv
-asyncpg
+psycopg2-binary
 supabase
 requests
-flask[async]
