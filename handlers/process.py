@@ -2,7 +2,7 @@ import asyncio
 import json
 import string
 import random
-from handlers.ml import optimize_query
+from handlers.ml import optimize_query, update_query, check_similarity
 from handlers.search import search_image
 from database.pool import db
 
@@ -37,14 +37,51 @@ async def init_tables():
         ''')
     
 
+from math import radians, sin, cos, sqrt, atan2
+
+def is_inside_radius(
+    center_lat,
+    center_lon,
+    check_lat,
+    check_lon,
+    radius_meters=50
+):
+    R = 6371000  
+
+    dlat = radians(check_lat - center_lat)
+    dlon = radians(check_lon - center_lon)
+
+    a = (
+        sin(dlat / 2) ** 2
+        + cos(radians(center_lat))
+        * cos(radians(check_lat))
+        * sin(dlon / 2) ** 2
+    )
+
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    distance = R * c
+
+    return distance <= radius_meters
+
+
+result = is_inside_radius(
+    center_lat=62.32,
+    center_lon=112.34,
+    check_lat=62.3202,
+    check_lon=112.3401
+)
 
 class RawProcessor:
     def __init__(self):
         pass
     
-    async def process_and_save(self, raw_id, text, location, reporter_id, img_url=None, source=None):
+    async def process_and_save(self, raw_id, text, location, reporter_id, img_url=None, source=None, use_update=False, existing_breaking=None, existing_summary=None, existing_description=None):
         try:
-            optimized_result = optimize_query(text)
+            if use_update and all([existing_breaking is not None, existing_summary, existing_description]):
+                optimized_result = update_query(text, existing_breaking, existing_summary, existing_description)
+            else:
+                optimized_result = optimize_query(text)
             
             if 'error' in optimized_result:
                 return {
@@ -114,6 +151,42 @@ class RawProcessor:
             )
             return result is not None
     
+    async def _find_similar_processed_report(self, new_text, new_location):
+        try:
+            async with db.token_pool.acquire() as connection:
+                processed_reports = await connection.fetch('''
+                    SELECT pr.raw_id, pr.breaking, pr.summary, pr.description, pr.location,
+                           rr.text
+                    FROM processed_reports pr
+                    JOIN raw_reports rr ON pr.raw_id = rr.raw_id
+                    ORDER BY pr.created_at DESC
+                ''')
+            
+            new_lat = new_location.get('latitude')
+            new_lon = new_location.get('longitude')
+            
+            for report in processed_reports:
+                existing_location = json.loads(report['location']) if isinstance(report['location'], str) else report['location']
+                existing_lat = existing_location.get('latitude')
+                existing_lon = existing_location.get('longitude')
+                
+                if all([new_lat, new_lon, existing_lat, existing_lon]):
+                    if is_inside_radius(existing_lat, existing_lon, new_lat, new_lon, radius_meters=50):
+                        is_similar = check_similarity(report['text'], new_text)
+                        
+                        if is_similar:
+                            return (
+                                report['raw_id'],
+                                report['breaking'],
+                                report['summary'],
+                                report['description']
+                            )
+            
+            return None
+        except Exception as e:
+            print(f"Error finding similar processed report: {e}")
+            return None
+    
     async def _save_to_db(self, raw_id, breaking, summary, description, location, reporter_id, img_url=None, source=None):
         async with db.token_pool.acquire() as connection:
             img_url_jsonb = json.dumps(img_url) if img_url else []
@@ -167,14 +240,33 @@ class ProcessingTask:
             if not is_processed:
                 location = json.loads(report['location']) if isinstance(report['location'], str) else report['location']
                 
-                result = await self.processor.process_and_save(
-                    raw_id=raw_id,
-                    text=report['text'],
-                    location=location,
-                    reporter_id=report['reporter_id'],
-                    img_url=report['img_url'],
-                    source=report['source']
-                )
+                similar_report = await self.processor._find_similar_processed_report(report['text'], location)
+                
+                if similar_report:
+                    original_raw_id, existing_breaking, existing_summary, existing_description = similar_report
+                    print(f"Found similar report {original_raw_id} for new raw report {raw_id}. Using update_query.")
+                    
+                    result = await self.processor.process_and_save(
+                        raw_id=raw_id,
+                        text=report['text'],
+                        location=location,
+                        reporter_id=report['reporter_id'],
+                        img_url=report['img_url'],
+                        source=report['source'],
+                        use_update=True,
+                        existing_breaking=existing_breaking,
+                        existing_summary=existing_summary,
+                        existing_description=existing_description
+                    )
+                else:
+                    result = await self.processor.process_and_save(
+                        raw_id=raw_id,
+                        text=report['text'],
+                        location=location,
+                        reporter_id=report['reporter_id'],
+                        img_url=report['img_url'],
+                        source=report['source']
+                    )
                 
                 if result.get('success'):
                     print(f"Successfully processed report: {raw_id}")
