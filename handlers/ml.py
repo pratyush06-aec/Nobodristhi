@@ -24,7 +24,7 @@ def load_tokens():
 # Initialize tokens on import
 load_tokens()
 
-API_URL = "https://openrouter.io/api/v1/chat/completions"
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODELS = [
     "openai/gpt-oss-120b:free",
     "google/gemma-4-31b-it:free",
@@ -74,16 +74,14 @@ def make_request(messages):
             }
         
         headers = {
-            "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
-            "HTTP-Referer": "https://synchronicity.local",
-            "X-OpenRouter-App-Id": "Synchronicity"
+            "Content-Type": "application/json"
         }
         
         payload = {
             "model": model,
             "messages": messages,
-            "temperature": 0.7,
+            "temperature": 0,
             "max_tokens": 500
         }
         
