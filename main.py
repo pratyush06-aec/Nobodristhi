@@ -8,8 +8,12 @@ from routes.processed import bp as processed_bp
 from database import db
 from dotenv import load_dotenv
 from handlers.process import init_tables, processing_task
+import nest_asyncio
 
 load_dotenv()
+
+# Apply nest_asyncio to allow nested event loops
+nest_asyncio.apply()
 
 app = Flask(__name__)
 
@@ -55,6 +59,15 @@ async def startup():
 if __name__ == '__main__':
     PORT = int(os.getenv('PORT', 5000))
     
-    asyncio.run(startup())
+    # Create event loop once and keep it open for the entire app lifetime
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     
+    # Initialize in this persistent loop
+    try:
+        loop.run_until_complete(startup())
+    except Exception as e:
+        print(f"❌ Failed to initialize: {e}")
+    
+    # Run Flask app with the persistent event loop
     app.run(host='0.0.0.0', port=PORT, debug=True)
