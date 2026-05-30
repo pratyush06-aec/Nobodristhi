@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .env
 cloner.py
+endpoints.md
