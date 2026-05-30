@@ -75,7 +75,9 @@ def make_request(messages):
         
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}"
+            "Authorization": f"Bearer {token}",
+            "HTTP-Referer": "https://synchronicity.local",
+            "X-OpenRouter-App-Id": "Synchronicity"
         }
         
         payload = {
@@ -92,6 +94,7 @@ def make_request(messages):
             print(f"  Model: {model}")
             print(f"  Headers: {list(headers.keys())}")
             print(f"  Payload keys: {list(payload.keys())}")
+            print(f"  Messages: {len(messages)} message(s)")
             first_attempt = False
         
         try:
@@ -113,8 +116,11 @@ def make_request(messages):
                 continue
             elif response.status_code == 405:
                 # 405 Method Not Allowed - check response for details
-                print(f"❌ 405 Method Not Allowed. Response: {response.text[:200]}")
-                print(f"API URL: {API_URL}, Model: {model}")
+                error_msg = response.text[:200] if response.text else "No response body"
+                print(f"❌ 405 Method Not Allowed")
+                print(f"   URL: {API_URL}")
+                print(f"   Model: {model}")
+                print(f"   Error: {error_msg}")
                 continue
             else:
                 print(f"⚠️  Request failed with status {response.status_code} (attempt {attempts}/{max_attempts})...")
