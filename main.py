@@ -41,28 +41,31 @@ if __name__ == '__main__':
     PORT = int(os.getenv('PORT', 5000))
     DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
     
-    # Initialize database connection pool
-    print("\n🔌 Initializing database connection pool...")
-    db.connect()
-    print("✅ Database pool initialized")
-    
-    # Initialize database tables
-    print("\n📊 Initializing database tables...")
-    init_tables()
-    print("✅ Database tables ready")
-    
-    # Start background processing task
-    print("\n🔄 Starting background processing task...")
-    processing_task.start()
-    print("✅ Background task started")
+    # Only initialize once (not in the reloader process)
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not DEBUG:
+        # Initialize database connection pool
+        print("\n🔌 Initializing database connection pool...")
+        db.connect()
+        print("✅ Database pool initialized")
+        
+        # Initialize database tables
+        print("\n📊 Initializing database tables...")
+        init_tables()
+        print("✅ Database tables ready")
+        
+        # Start background processing task
+        print("\n🔄 Starting background processing task...")
+        processing_task.start()
+        print("✅ Background task started")
     
     # Run Flask app
     print(f"\n🚀 Starting Flask server on http://0.0.0.0:{PORT}")
     try:
         app.run(host='0.0.0.0', port=PORT, debug=DEBUG, threaded=True)
     finally:
-        print("\n🛑 Shutting down...")
-        processing_task.stop()
-        print("✅ Background task stopped")
-        db.close_all()
-        print("✅ Database connections closed")
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not DEBUG:
+            print("\n🛑 Shutting down...")
+            processing_task.stop()
+            print("✅ Background task stopped")
+            db.close_all()
+            print("✅ Database connections closed")
