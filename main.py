@@ -1,8 +1,7 @@
 import asyncio
 import os
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
-from routes.health import bp
 from routes.member import bp as member_bp
 from database import db
 from dotenv import load_dotenv
@@ -17,10 +16,13 @@ CORS(app,
      methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
      supports_credentials=True)
 
-app.register_blueprint(bp)
 app.register_blueprint(member_bp)
 
 _db_connected = False
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'ok', 'message': 'Server is running'})
 
 @app.before_request
 def connect_database():
