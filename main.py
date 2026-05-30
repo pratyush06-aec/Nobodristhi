@@ -5,6 +5,7 @@ from routes.member import bp as member_bp
 from routes.raw import bp as raw_bp
 from routes.processed import bp as processed_bp
 from database import db
+from handlers.process import init_tables, processing_task
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -45,10 +46,23 @@ if __name__ == '__main__':
     db.connect()
     print("✅ Database pool initialized")
     
+    # Initialize database tables
+    print("\n📊 Initializing database tables...")
+    init_tables()
+    print("✅ Database tables ready")
+    
+    # Start background processing task
+    print("\n🔄 Starting background processing task...")
+    processing_task.start()
+    print("✅ Background task started")
+    
     # Run Flask app
-    print(f"🚀 Starting Flask server on http://0.0.0.0:{PORT}")
+    print(f"\n🚀 Starting Flask server on http://0.0.0.0:{PORT}")
     try:
         app.run(host='0.0.0.0', port=PORT, debug=DEBUG, threaded=True)
     finally:
-        print("\n📴 Closing database connections...")
+        print("\n🛑 Shutting down...")
+        processing_task.stop()
+        print("✅ Background task stopped")
         db.close_all()
+        print("✅ Database connections closed")
