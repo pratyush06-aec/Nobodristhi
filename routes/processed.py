@@ -41,15 +41,29 @@ def fetch_all_processed_reports():
         
         reports_list = []
         for row in rows:
+            location = row[5]
+            if isinstance(location, str):
+                try:
+                    location = json.loads(location)
+                except:
+                    location = None
+            
+            img_url = row[7]
+            if isinstance(img_url, str):
+                try:
+                    img_url = json.loads(img_url)
+                except:
+                    img_url = None
+            
             reports_list.append({
                 'processed_id': row[0],
                 'raw_id': row[1],
                 'breaking': row[2],
                 'summary': row[3],
                 'description': row[4],
-                'location': json.loads(row[5]) if row[5] else None,
+                'location': location,
                 'reporter_id': row[6],
-                'img_url': json.loads(row[7]) if row[7] else None,
+                'img_url': img_url,
                 'source': row[8],
                 'created_at': row[9].isoformat() if row[9] else None
             })
@@ -159,6 +173,22 @@ def fetch_processed_report_by_id(processed_id):
         print(f"✅ [FETCH_PROCESSED_REPORT_BY_ID] Report found")
         cur.close()
         
+        # Handle location - JSONB column already returns as dict/list, not string
+        location = row[5]
+        if isinstance(location, str):
+            try:
+                location = json.loads(location)
+            except:
+                location = None
+        
+        # Handle img_url - similarly handle JSONB if present
+        img_url = row[7]
+        if isinstance(img_url, str):
+            try:
+                img_url = json.loads(img_url)
+            except:
+                img_url = None
+        
         return {
             "success": True,
             'message': 'Processed report retrieved successfully',
@@ -168,9 +198,9 @@ def fetch_processed_report_by_id(processed_id):
                 'breaking': row[2],
                 'summary': row[3],
                 'description': row[4],
-                'location': json.loads(row[5]) if row[5] else None,
+                'location': location,
                 'reporter_id': row[6],
-                'img_url': json.loads(row[7]) if row[7] else None,
+                'img_url': img_url,
                 'source': row[8],
                 'created_at': row[9].isoformat() if row[9] else None
             }

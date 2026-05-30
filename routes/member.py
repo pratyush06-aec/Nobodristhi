@@ -29,7 +29,6 @@ def login():
         }), 500
 
 def save_member(member_id, name, email, role):
-    """Save member to database"""
     conn = None
     try:
         conn = db.get_connection()

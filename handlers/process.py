@@ -58,6 +58,25 @@ def init_tables():
         ''')
         print("✅ [INIT_TABLES] Processed reports table created")
         
+        print("📊 [INIT_TABLES] Creating complete_news table...")
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS complete_news (
+                complete_id VARCHAR PRIMARY KEY,
+                processed_id VARCHAR NOT NULL,
+                raw_id VARCHAR NOT NULL,
+                breaking TEXT,
+                summary TEXT NOT NULL,
+                description TEXT NOT NULL,
+                location JSONB NOT NULL,
+                reporter_id TEXT NOT NULL,
+                img_url TEXT,
+                source TEXT,
+                created_at TIMESTAMP,
+                approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("✅ [INIT_TABLES] Complete news table created")
+        
         conn.commit()
         cur.close()
         print("✅ [INIT_TABLES] All tables initialized successfully")
