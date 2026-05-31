@@ -79,6 +79,14 @@ def init_tables():
         ''')
         print("✅ [INIT_TABLES] Complete news table created")
         
+        print("📊 [INIT_TABLES] Creating templates table...")
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS templates (
+                template_number INT PRIMARY KEY CHECK (template_number >= 1 AND template_number <= 5)
+            )
+        ''')
+        print("✅ [INIT_TABLES] Templates table created")
+        
         conn.commit()
         cur.close()
         print("✅ [INIT_TABLES] All tables initialized successfully")
