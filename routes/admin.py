@@ -10,22 +10,39 @@ def generate_complete_id():
     chars = string.ascii_letters + string.digits
     return ''.join(secrets.choice(chars) for _ in range(16))
 
-@bp.route('/approve', methods=['GET'])
+@bp.route('/approve', methods=['POST'])
 def approve_news():
     try:
-        processed_id = request.args.get('processed_id')
-        img_index = request.args.get('img_index', type=int)
+        data = request.get_json()
+        
+        if data is None:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid JSON format'
+            }), 400
+        
+        processed_id = data.get('processed_id')
+        img_index = data.get('img_index')
         
         if not processed_id:
             return jsonify({
                 'success': False,
-                'message': 'Missing required parameter: processed_id'
+                'message': 'Missing required field: processed_id'
             }), 400
         
         if img_index is None:
             return jsonify({
                 'success': False,
-                'message': 'Missing required parameter: img_index (image selection required)'
+                'message': 'Missing required field: img_index (image selection required)'
+            }), 400
+        
+        # Ensure img_index is an integer
+        try:
+            img_index = int(img_index)
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'message': 'img_index must be an integer'
             }), 400
         
         result = move_to_complete(processed_id, img_index)
@@ -38,15 +55,23 @@ def approve_news():
             'message': str(e)
         }), 500
 
-@bp.route('/reject', methods=['GET'])
+@bp.route('/reject', methods=['POST'])
 def reject_news():
     try:
-        processed_id = request.args.get('processed_id')
+        data = request.get_json()
+        
+        if data is None:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid JSON format'
+            }), 400
+        
+        processed_id = data.get('processed_id')
         
         if not processed_id:
             return jsonify({
                 'success': False,
-                'message': 'Missing required parameter: processed_id'
+                'message': 'Missing required field: processed_id'
             }), 400
         
         result = mark_as_rejected(processed_id)

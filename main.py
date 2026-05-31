@@ -14,7 +14,6 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Suppress noisy werkzeug logging for malformed requests
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
