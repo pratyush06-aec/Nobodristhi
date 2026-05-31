@@ -207,7 +207,6 @@ def fetch_processed_report_by_id(processed_id):
                 'breaking': row[2],
                 'summary': row[3],
                 'description': row[4],
-                'location': location,
                 'reporter_id': row[6],
                 'img_url': img_url,
                 'source': row[8],
