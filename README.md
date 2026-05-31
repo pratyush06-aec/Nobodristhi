@@ -1,765 +1,194 @@
-# Synchronicity - An AI Powered News Control and Management System
+<p align="center">
+  <img src="assets/logo.png" alt="NoboDorshi Logo" width="250"/>
+</p>
 
-A comprehensive news processing and verification system composed of three integrated services: **Backend API**, **Search Service**, and **Frontend Dashboard**. The system handles raw reports, processes them with ML algorithms, performs image verification, and provides admin management capabilities.
+<h1 align="center">NoboDorshi - AI Powered News Control and Management System</h1>
+
+<p align="center">
+  A comprehensive news processing and verification backend API. The system handles raw reports, processes them with intelligent Machine Learning algorithms, performs reverse-image media verification, groups reports by geographical proximity, and provides robust administrative management capabilities.
+</p>
+
+---
 
 ## 📋 Table of Contents
 
 - [Project Overview](#project-overview)
-- [Architecture](#architecture)
-- [Repository Structure](#repository-structure)
-- [Technologies](#technologies)
+- [Snapshots & Application Previews](#snapshots--application-previews)
+- [System Architecture](#system-architecture)
+- [Database Schema](#database-schema)
+- [Background ML Processing](#background-ml-processing)
+- [API Endpoints Reference](#api-endpoints-reference)
 - [Getting Started](#getting-started)
-- [Backend Documentation](#backend-documentation)
-- [Search Service Documentation](#search-service-documentation)
-- [Frontend Documentation](#frontend-documentation)
-- [Database](#database)
-- [Development](#development)
-- [Deployment](#deployment)
+- [Development & Contribution](#development--contribution)
+
+---
 
 ## 🎯 Project Overview
 
-Synchronicity is an integrated platform designed to streamline news verification and processing. It consists of three main components working together:
+**NoboDorshi** serves as the intelligent core backend for a streamlined, secure news verification pipeline. 
 
-1. **Backend API**: Core service handling report management, processing, and admin operations
-2. **Search Service**: Specialized service for query optimization and reverse image search
-3. **Frontend Dashboard**: User-friendly interface for members and administrators
+It provides secure REST API endpoints for user member management, raw news submission (with precise geolocation and image payload capabilities), automatic background AI-based summarization and clustering, and administrative moderation to approve or reject processed news items into their final state.
 
-### ✨ Key Features
+---
 
-- **Member Management**: Create, authenticate, and manage user members with role-based access
-- **Raw Report Submission**: Accept text reports with optional image attachments and geolocation data
-- **Intelligent Report Processing**: ML-powered pipeline for analyzing and summarizing reports
-- **Image Verification**: Reverse image search capabilities using SerpAPI for media authenticity verification
-- **Query Optimization**: Query simplification using advanced LLMs via OpenRouter API
-- **Admin Dashboard**: Approve/reject processed reports and manage news templates
-- **Responsive Frontend**: Modern React-based interface for both members and admins
-- **Background Processing**: Asynchronous task processing for resource-intensive operations
-- **Real-time Updates**: WebSocket-ready architecture for live data updates
-- **API Security**: CORS support and request validation
+## 📸 Snapshots & Application Previews
 
-## 🏗️ Architecture
+*Note: Since the backend is primarily a programmatic API interface, the "realtime execution" is best represented by the dashboard interfaces consuming the API and the active server console traces.*
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Frontend (React + TanStack)              │
-│              Modern Dashboard & Member Interface              │
-└──────────────────────┬──────────────────────┬────────────────┘
-                       │                      │
-          ┌────────────▼──────────────┐      │
-          │    Backend API (Flask)     │◄─────┘
-          │  - Report Management       │
-          │  - Member Auth             │
-          │  - Admin Operations        │
-          │  - Database Ops            │
-          └────────────┬────────────┬──┘
-                       │            │
-        ┌──────────────▼──┐    ┌────▼──────────────┐
-        │  Search Service  │    │   PostgreSQL DB   │
-        │   (Query/Images) │    │  - Members        │
-        │   - Simplify     │    │  - Reports        │
-        │   - Image Search │    │  - Templates      │
-        └──────────────────┘    └───────────────────┘
-```
+### 1. Dashboard View
+![Dashboard Snapshot](assets/dashboard.png)
+*A sleek, modern web dashboard interface connected to the NoboDorshi API, displaying realtime report processing statuses, AI analysis metrics, and moderation queues.*
 
-## 📁 Repository Structure
+### 2. AI Processing Engine
+![AI Processing Snapshot](assets/ai_processing.png)
+*Visual representation of the background ML engine parsing a raw news article, highlighting entities, and compiling factual summaries.*
 
-```
-Synchronicity/
-├── backend/              # Main API Server
-│   ├── main.py          # Flask app & configuration
-│   ├── requirements.txt  # Python dependencies
-│   ├── database/        # DB connection pooling
-│   ├── handlers/        # Business logic (ML, processing, search)
-│   ├── routes/          # API endpoints
-│   └── README.md        # This file
-│
-├── search/              # Query & Image Search Service
-│   ├── main.py          # Flask app
-│   ├── requirements.txt  # Python dependencies
-│   ├── database/        # Token management
-│   ├── search/          # Search modules
-│   │   ├── query.py     # Query simplification
-│   │   └── image.py     # Image search
-│   └── tokens.json      # API tokens storage
-│
-└── frontend/            # React Dashboard
-    ├── src/
-    │   ├── routes/      # TanStack Router pages
-    │   ├── components/  # React components
-    │   ├── store/       # State management
-    │   ├── lib/         # Utilities & helpers
-    │   ├── server.ts    # SSR server entry
-    │   └── start.ts     # App initialization
-    ├── package.json     # Node dependencies
-    ├── vite.config.ts   # Vite configuration
-    └── tsconfig.json    # TypeScript config
+### 3. Realtime Server Execution Logs
+![Server Logs Snapshot](assets/logs.png)
+*A realtime trace log snapshot from a running NoboDorshi instance demonstrating the initialization of background processing threads and successful ML query optimizations.*
+
+Alternatively, when you execute `python main.py`, your server will initialize its connection pools and spawn the worker threads as shown in this terminal snapshot block:
+
+```bash
+🔌 Initializing database connection pool...
+✅ Database pool initialized
+
+📊 Initializing database tables...
+🔵 [INIT_TABLES] Initializing database tables
+📊 [INIT_TABLES] Creating members table...
+...
+✅ [INIT_TABLES] All tables initialized successfully
+
+🔄 Starting background processing task...
+✅ Background task started
+
+🚀 Starting Flask server on http://0.0.0.0:5000
+ * Serving Flask app 'main'
+ * Debug mode: on
 ```
 
-## � Technologies
+---
 
-### Backend & Search Services
-- **Framework**: Flask 2.x
-- **Database**: PostgreSQL with psycopg2 & asyncpg
-- **ORM/Database Client**: Supabase
-- **External APIs**: 
-  - OpenRouter API (query simplification)
-  - SerpAPI (image search)
-- **Async Support**: asyncio, asyncpg
-- **CORS**: Flask-CORS
-- **Environment Management**: python-dotenv
-- **HTTP Requests**: requests
+## 🏗 System Architecture
 
-### Frontend
-- **Framework**: React 18+
-- **Build Tool**: Vite
-- **Routing**: TanStack Router v1
-- **Meta-framework**: TanStack Start
-- **State Management**: TanStack React Query
-- **UI Components**: Radix UI (primitive components)
-- **Styling**: Tailwind CSS
-- **Forms**: React Hook Form with Zod/Resolvers
-- **Authentication**: Civic Auth SDK
-- **TypeScript**: Full type safety
-- **Deployment**: Cloudflare Workers/Pages
+NoboDorshi separates concerns into isolated components to guarantee stability and scalability:
+- **Routes Layer (`/routes`)**: Contains Flask Blueprints (`admin`, `member`, `processed`, `raw`, `template`). Decoupled from heavy processing logic to ensure fast HTTP response times.
+- **Handlers Layer (`/handlers`)**: The core business logic.
+  - `ml.py`: Integration with the LLMs (query optimization, data summarization).
+  - `process.py`: Centralized background daemon. Periodically checks for new reports and calculates geographic similarity.
+  - `search.py`: Reverse image searches using external providers (SerpAPI) to authenticate report media.
+- **Database Layer (`/database`)**: Built-in psycopg2-based connection pooler (`pool.py`) connecting to PostgreSQL. Files are stored and served publicly using Supabase Storage integration.
+
+---
+
+## 🗄 Database Schema
+
+The system automatically initializes 5 primary tables in PostgreSQL:
+
+1. **`members`**: Stores user authentication and role data.
+2. **`raw_reports`**: Direct, unfiltered submissions holding text, `JSONB` location coordinates, reporter IDs, and external source information. 
+3. **`processed_reports`**: Output of the Background ML processing queue. Contains AI-generated `summary`, `breaking` status, and `description`, along with verification results. Uses unique constraints linked to `raw_id`.
+4. **`complete_news`**: The final truth-verified reports approved by the system administrators.
+5. **`templates`**: System UI configurations.
+
+---
+
+## 🤖 Background ML Processing
+
+One of NoboDorshi's standout features is its decoupled, non-blocking Processing Queue (`ProcessingTask` in `handlers/process.py`):
+
+1. **Daemon Thread**: Automatically spins up a background thread that wakes up every `10` seconds.
+2. **Batch Polling**: Selects pending items from `raw_reports` that haven't been processed.
+3. **Geospatial Clustering**: Uses the **Haversine Formula** to determine if a new report occurred within a **50-meter radius** of an already processed report. If a match is found, the system intelligently optimizes and aggregates the new findings into the existing timeline.
+4. **AI Generation**: Transforms raw text into `breaking` highlights, concise `summaries`, and full `descriptions`.
+5. **Image Verification**: Extracted features trigger a reverse-image lookup to ensure media credibility.
+
+---
+
+## 🌐 API Endpoints Reference
+
+**Base URL:** `http://localhost:5000`
+
+### 📝 Raw Reports (`/raw`)
+- **`POST /raw/report`**: Submit a new report. Expects `multipart/form-data` including `text`, `latitude`, `longitude`, `reporterid`. Optionally uploads an `image` payload directly to Supabase Storage buckets.
+- **`GET /raw/`**: Returns all unmoderated raw reports.
+- **`POST /raw/delete`**: Drops a report by its `raw_id`.
+
+### 🧠 Processed Reports (`/processed`)
+- **`GET /processed/`**: Retrieve all processed (but unapproved) reports waiting in the moderation queue.
+- **`POST /processed/report`**: Fetch a specific processed report by its `processed_id`.
+- **`POST /processed/delete`**: Clear a processed report.
+
+### 🛡 Admin (`/admin`)
+- **`POST /admin/approve`**: Mark a processed report as verified, migrating it to the `complete_news` public ledger.
+
+### 👥 Members (`/member`)
+- **`POST /member/login`** & **`POST /member/delete`**: User session and access management.
+
+*(Refer to individual files in `/routes/` for comprehensive payload requirements and JSON response shapes).*
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-**For Backend & Search Services:**
-- Python 3.8+
-- PostgreSQL 12+
-- pip (Python package manager)
-- API Keys: OpenRouter, SerpAPI
-
-**For Frontend:**
-- Node.js 18+
-- npm or yarn
-- Environment variables configured
+- **Python 3.8+**
+- **PostgreSQL 12+** (Or a Supabase instance)
+- API Keys: SerpAPI, OpenRouter (or equivalent LLM provider configured in `handlers/ml.py`)
 
 ### Quick Start
 
-#### 1. Backend API
-
-```bash
-cd backend
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-pip install -r requirements.txt
-
-# Configure .env file (see configuration section)
-python main.py
-```
-
-Server runs at `http://0.0.0.0:5000`
-
-#### 2. Search Service
-
-```bash
-cd search
-python -m venv venv
-
-# Activate virtual environment
-venv\Scripts\activate
-
-pip install -r requirements.txt
-
-# Configure .env file
-python main.py
-```
-
-Service runs at `http://0.0.0.0:5001` (or configured port)
-
-#### 3. Frontend Dashboard
-
-```bash
-cd frontend
-npm install
-
-# Configure .env file with backend URL
-npm run dev
-```
-
-Dev server runs at `http://localhost:24660` (or configured port)
-
-## ⚙️ Configuration
-
-### Backend Service (.env)
-
-Create `.env` file in the `backend/` directory:
-
-```env
-# Flask Configuration
-PORT=5000
-DEBUG=True
-
-# Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/synchronicity
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-```
-
-### Search Service (.env)
-
-Create `.env` file in the `search/` directory:
-
-```env
-# Flask Configuration
-PORT=5001
-DEBUG=True
-
-# Database Configuration (same as backend)
-DATABASE_URL=postgresql://username:password@localhost:5432/synchronicity
-
-# API Keys
-API_ACCESSCODE=your_api_access_code
-```
-
-Also create `search/tokens.json`:
-```json
-[
-  { "token": "your_openrouter_token_1" },
-  { "token": "your_openrouter_token_2" }
-]
-```
-
-### Frontend Configuration
-
-Create `.env` file in the `frontend/` directory:
-
-```env
-# Backend API URL
-VITE_BACKEND_URL=http://ariella.hidencloud.com:24652
-
-# Authentication
-VITE_CIVIC_CLIENT_ID=your_civic_client_id
-```
-
-### Environment Variables Reference
-
-| Service | Variable | Default | Description |
-|---------|----------|---------|-------------|
-| Backend | `PORT` | 5000 | Flask server port |
-| Backend | `DEBUG` | True | Debug mode for development |
-| Backend | `DATABASE_URL` | - | PostgreSQL connection string |
-| Search | `PORT` | 5001 | Flask server port |
-| Search | `API_ACCESSCODE` | - | API access code for validation |
-| Frontend | `VITE_BACKEND_URL` | - | Backend API base URL |
-| Frontend | `VITE_CIVIC_CLIENT_ID` | - | Civic authentication client ID |
-
-## 🏃 Running the Application
-
-### Development Mode
-
-**Terminal 1 - Backend API:**
-```bash
-cd backend
-python main.py
-```
-Runs at `http://0.0.0.0:5000`
-
-**Terminal 2 - Search Service:**
-```bash
-cd search
-python main.py
-```
-Runs at `http://0.0.0.0:5001`
-
-**Terminal 3 - Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-Runs at `http://localhost:24660`
-
-### Production Mode
-
-**Backend:**
-```bash
-cd backend
-DEBUG=False python main.py
-```
-
-**Search Service:**
-```bash
-cd search
-DEBUG=False python main.py
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run build
-npm run preview
-```
-
-## 📚 Backend Documentation
-
-### Features
-
-- **Member Management**: Create, authenticate, and manage members with role-based access
-- **Raw Report Submission**: Accept text reports with optional images and geolocation
-- **Report Processing**: ML-powered pipeline with automatic summarization
-- **Admin Operations**: Approve/reject reports and manage templates
-- **Background Tasks**: Asynchronous processing of resource-intensive operations
-- **Connection Pooling**: Efficient PostgreSQL resource management
-
-### Project Structure
-
-```
-backend/
-├── main.py              # Flask app, CORS, error handlers
-├── routes/              # API endpoints
-│   ├── member.py        # Member login/deletion
-│   ├── raw.py           # Raw report submission
-│   ├── processed.py     # Processed report retrieval
-│   ├── admin.py         # Admin approval operations
-│   └── template.py      # Template management
-├── handlers/            # Business logic
-│   ├── process.py       # Processing pipeline & background tasks
-│   ├── ml.py            # ML algorithms & similarity checking
-│   └── search.py        # Image search integration
-├── database/            # Data access layer
-│   └── pool.py          # Connection pooling
-└── requirements.txt
-```
-
-### API Endpoints
-
-**Base URL:** `http://localhost:5000`
-
-#### Health Check
-```
-GET / → {status: ok}
-```
-
-#### Member Operations
-```
-POST /member/login         # Create/authenticate member
-POST /member/delete        # Delete member
-```
-
-#### Report Operations
-```
-POST /raw/report                    # Submit raw report
-GET /processed/reports              # Get all processed reports
-GET /processed/reports/<id>         # Get specific report
-```
-
-#### Admin Operations
-```
-POST /admin/approve                 # Approve news report
-```
-
-#### Template Management
-```
-GET /template/list                  # Get templates
-POST /template/create               # Create new template
-```
-
-For detailed API documentation, see [backend/endpoints.md](backend/endpoints.md)
-
-### Database Schema
-
-- **members**: User member information
-- **raw_reports**: Raw submitted reports with location and image data
-- **processed_reports**: ML-processed reports with summaries
-- **approved_news**: Final approved news items
-
-## 📍 Search Service Documentation
-
-### Features
-
-- **Query Simplification**: Simplify complex queries using advanced LLMs
-- **Image Search**: Reverse image search for media verification
-- **Token Rotation**: Multi-token support with intelligent rotation
-- **Token Management**: Cooldown tracking and token lifecycle management
-
-### Project Structure
-
-```
-search/
-├── main.py              # Flask app & routing
-├── search/              # Search modules
-│   ├── query.py         # Query simplification using OpenRouter API
-│   └── image.py         # Image search using SerpAPI
-├── database/            # Token management
-│   ├── __init__.py
-│   └── token.py         # Token storage & operations
-├── requirements.txt
-└── tokens.json          # OpenRouter API tokens
-```
-
-### API Endpoints
-
-**Base URL:** `http://localhost:5001`
-
-```
-GET /                           # API documentation
-POST /search/image              # Reverse image search
-POST /search/query/simplify     # Simplify query
-```
-
-### External APIs Used
-
-- **OpenRouter API**: Multi-model LLM for query simplification
-- **SerpAPI**: Google Images search for image verification
-
-### Token Management
-
-The service supports multiple tokens for both OpenRouter and SerpAPI with:
-- Automatic token rotation
-- Cooldown tracking
-- Token lifecycle management
-- Fallback mechanisms
-
-## 🎨 Frontend Documentation
-
-### Features
-
-- **Member Dashboard**: Submit reports with images and location
-- **Admin Dashboard**: Review and approve processed reports
-- **Modern UI**: Responsive design using Radix UI components
-- **State Management**: TanStack Query for data fetching
-- **Real-time Updates**: WebSocket-ready architecture
-- **Authentication**: Civic-based authentication
-
-### Project Structure
-
-```
-frontend/src/
-├── routes/              # TanStack Router pages
-│   ├── dashboard.*      # Member dashboard routes
-│   ├── admin.*          # Admin routes
-│   └── index.tsx        # Home/landing page
-├── components/
-│   ├── dash/            # Dashboard components
-│   │   ├── AIProcessing.tsx
-│   │   ├── ImageUpload.tsx
-│   │   ├── Sidebar.tsx
-│   │   └── ...
-│   ├── site/            # Public site components
-│   │   ├── Navbar.tsx
-│   │   ├── Footer.tsx
-│   │   ├── Hero.tsx
-│   │   └── ...
-│   └── ui/              # Radix UI components
-├── store/               # State management
-│   ├── reports.ts
-│   └── templates.ts
-├── lib/                 # Utilities
-│   ├── utils.ts
-│   ├── error-capture.ts
-│   └── error-page.ts
-└── server.ts            # SSR server configuration
-```
-
-### Available Scripts
-
-```bash
-npm run dev              # Start development server
-npm run build            # Build for production
-npm run build:dev        # Build with dev mode
-npm run preview          # Preview production build
-npm run lint             # Run ESLint
-npm run format           # Format code with Prettier
-```
-
-### Component Library
-
-- **Radix UI**: Base components (buttons, dialogs, cards, etc.)
-- **Tailwind CSS**: Utility-first styling
-- **Custom Components**: Specialized dashboard components
-
-### State Management
-
-- **TanStack Query**: Server state and data fetching
-- **React Hooks**: Local component state
-- **Context API**: Shared application state
-
-## 👨‍💻 Development
-
-### Request Flow
-
-```
-Client Request
-    ↓
-Frontend (React)
-    ↓
-Backend API (Flask)
-    ├─ Route Handler
-    ├─ Request Validation
-    ├─ Business Logic (Handlers)
-    ├─ Database Operations
-    └─ Response
-    ↓
-Search Service (when needed)
-    ├─ Query Simplification
-    ├─ Image Search
-    └─ Token Management
-    ↓
-Client Response
-```
-
-### Key Components Interaction
-
-1. **Frontend** → Sends requests to Backend API
-2. **Backend** → Routes to appropriate handler and database
-3. **Backend** → Calls Search Service for query/image operations
-4. **Search Service** → Manages external API calls (OpenRouter, SerpAPI)
-5. **Database** → Stores and retrieves all data
-
-### Testing
-
-**Backend Tests:**
-```bash
-cd backend
-python test_admin.py
-```
-
-**Manual API Testing:**
-```bash
-curl http://localhost:5000/
-```
-
-### Logging & Debugging
-
-- Werkzeug logs are suppressed (ERROR level) to reduce spam
-- Enable application logging by modifying `handlers/process.py`
-- Frontend console logs available in browser developer tools
-- Check environment variables for API key issues
-
-### Common Issues & Solutions
-
-| Issue | Solution |
-|-------|----------|
-| Database connection fails | Check DATABASE_URL in .env, ensure PostgreSQL is running |
-| API keys rejected | Verify OpenRouter and SerpAPI tokens in tokens.json |
-| Frontend can't reach backend | Check VITE_BACKEND_URL and CORS settings |
-| Image search fails | Verify SerpAPI tokens and cooldown status |
-| Query simplification times out | Check OpenRouter API limits and tokens |
-
-## 🔐 Security Considerations
-
-### Current Implementation
-
-- ✅ CORS support for frontend integration
-- ✅ Request validation and sanitization
-- ✅ Connection pooling prevents resource exhaustion
-- ✅ Environment variables for sensitive data
-- ✅ Error handling without exposing stack traces
-
-### Production Recommendations
-
-- ⚠️ Restrict CORS origins (currently `"*"`)
-- ⚠️ Implement proper JWT/OAuth authentication
-- ⚠️ Use HTTPS for all communications
-- ⚠️ Add rate limiting on API endpoints
-- ⚠️ Implement API key rotation strategy
-- ⚠️ Use environment secrets management (AWS Secrets Manager, HashiCorp Vault)
-- ⚠️ Enable database encryption at rest
-- ⚠️ Implement request logging and monitoring
-- ⚠️ Set up security headers (CSP, X-Frame-Options, etc.)
-- ⚠️ Regular security audits and dependency updates
-
-## 📊 Monitoring & Performance
-
-### Key Metrics to Monitor
-
-- **Backend**: Request latency, database query time, error rates
-- **Search Service**: API call success rate, token availability
-- **Frontend**: Page load time, API response time, user interactions
-- **Database**: Connection pool usage, slow queries
-
-### Performance Optimization
-
-- Database query optimization with proper indexing
-- Frontend code splitting and lazy loading
-- API response caching strategies
-- Connection pooling and reuse
-- Batch operations where possible
-
-## 🚀 Deployment
-
-### Backend Deployment
-
-**Using Gunicorn:**
-```bash
-cd backend
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 main:app
-```
-
-**Using Docker:**
-```dockerfile
-FROM python:3.11
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["python", "main.py"]
-```
-
-### Search Service Deployment
-
-Similar to backend, can use Gunicorn or Docker
-
-### Frontend Deployment
-
-**Cloudflare Pages:**
-```bash
-cd frontend
-npm run build
-# Deploy build/ directory to Cloudflare Pages
-```
-
-**Traditional Hosting:**
-```bash
-npm run build
-# Serve dist/ folder with your preferred server
-```
-
-### Environment Setup for Deployment
-
-Ensure all `.env` variables are set in your deployment platform:
-
-```
-Production Backend (.env):
-- PORT=5000
-- DEBUG=False
-- DATABASE_URL=<production_db>
-
-Production Search (.env):
-- PORT=5001
-- DEBUG=False
-- DATABASE_URL=<production_db>
-- API_ACCESSCODE=<secure_code>
-
-Production Frontend:
-- VITE_BACKEND_URL=<production_backend_url>
-- VITE_CIVIC_CLIENT_ID=<production_client_id>
-```
-
-## 🔄 Continuous Integration
-
-Recommended CI/CD pipeline:
-
-1. **Code Push** → GitHub
-2. **Tests** → Run test suite
-3. **Build** → Build all services
-4. **Deploy** → Deploy to staging
-5. **Manual Testing** → QA verification
-6. **Production Deploy** → Deploy to production
-
-### GitHub Actions Example
-
-```yaml
-name: CI/CD
-on: [push]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Test Backend
-        run: cd backend && python test_admin.py
-      - name: Test Frontend
-        run: cd frontend && npm test
-```
-
-## 🤝 Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make your changes and commit: `git commit -am 'Add new feature'`
-3. Test thoroughly across all services
-4. Push to the branch: `git push origin feature/your-feature`
-5. Submit a pull request with detailed description
-
-### Contribution Guidelines
-
-- Follow existing code style and conventions
-- Add tests for new functionality
-- Update documentation for API changes
-- Ensure all services are tested before PR
-- Write clear commit messages
-
-## 📚 Additional Resources
-
-### Documentation
-- [Flask Documentation](https://flask.palletsprojects.com/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [React Documentation](https://react.dev/)
-- [TanStack Router](https://tanstack.com/router/latest)
-- [Vite Documentation](https://vitejs.dev/)
-
-### External APIs
-- [OpenRouter API Documentation](https://openrouter.ai/docs)
-- [SerpAPI Documentation](https://serpapi.com/docs)
-- [Civic Auth Documentation](https://docs.civic.com/)
-- [Supabase Documentation](https://supabase.com/docs)
-
-### Development Tools
-- [Postman](https://www.postman.com/) - API testing
-- [pgAdmin](https://www.pgadmin.org/) - PostgreSQL management
-- [VS Code](https://code.visualstudio.com/) - Code editor
-
-## 📞 Support
-
-For issues and questions:
-1. Check existing issues in repository
-2. Review documentation sections above
-3. Create a new issue with detailed description
-4. Include error logs and steps to reproduce
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/kingmon6996/Nobodristhi.git
+   cd Nobodristhi
+   ```
+
+2. **Set up a virtual environment**:
+   ```bash
+   python -m venv venv
+   # Windows:
+   venv\Scripts\activate
+   # macOS/Linux:
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Environment Variables**:
+   Create a `.env` file in the root directory:
+   ```env
+   PORT=5000
+   DEBUG=True
+   DATABASE_URL=postgresql://user:pass@localhost:5432/nobodorshi
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_KEY=your_anon_key
+   ```
+
+5. **Run the API server**:
+   ```bash
+   python main.py
+   ```
+
+---
+
+## 👨‍💻 Development & Contribution
+
+NoboDorshi welcomes contributions! Follow these steps to submit your changes:
+
+1. Check out a feature branch: `git checkout -b feature/cool-new-idea`
+2. Commit your code: `git commit -am 'Implemented intelligent image batching'`
+3. Push to your fork/branch: `git push origin feature/cool-new-idea`
+4. Submit a Pull Request describing your changes.
+
+**Note:** Always ensure that `ProcessingTask` logic changes are thread-safe, and new API routes correctly instantiate and close database pool connections (`db.get_connection()`).
+
+---
 
 ## 📄 License
 
-This project is part of the Synchronicity project. All rights reserved.
-
----
-
-## 📋 Quick Reference
-
-### Port Summary
-| Service | Port | URL |
-|---------|------|-----|
-| Backend API | 5000 | http://localhost:5000 |
-| Search Service | 5001 | http://localhost:5001 |
-| Frontend | 24660 | http://localhost:24660 |
-| PostgreSQL | 5432 | localhost:5432 |
-
-### Key Files
-| File | Purpose |
-|------|---------|
-| `backend/main.py` | Backend entry point |
-| `search/main.py` | Search service entry point |
-| `frontend/src/start.ts` | Frontend entry point |
-| `backend/requirements.txt` | Backend dependencies |
-| `search/requirements.txt` | Search dependencies |
-| `frontend/package.json` | Frontend dependencies |
-
-### Common Commands
-```bash
-# Backend
-cd backend && python main.py          # Start backend
-python test_admin.py                  # Run tests
-
-# Search
-cd search && python main.py            # Start search service
-
-# Frontend
-cd frontend && npm run dev             # Start dev server
-npm run build                          # Build for production
-npm run lint                           # Check code
-```
-
----
-
-**Last Updated**: May 31, 2026
-**Project Version**: 1.0.0
-**Status**: Active Development
+This project is part of the NoboDorshi ecosystem. All rights reserved.
