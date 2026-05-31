@@ -3,6 +3,9 @@ import requests
 from pathlib import Path
 from datetime import datetime
 import json
+from dotenv import load_dotenv
+
+load_dotenv()  
 
 ELEVENLABS_API_KEY = os.getenv('ELEVENLABS_API_KEY', '')
 ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1'
