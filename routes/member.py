@@ -128,3 +128,62 @@ def delete_member(member_id):
     finally:
         if conn:
             db.return_connection(conn)
+
+@bp.route('/data', methods=['POST'])
+def data():
+    try:
+        data_payload = request.get_json()
+        member_id = data_payload.get('id')
+        
+        if not member_id:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required field: id'
+            }), 400
+        
+        result = get_member_data(member_id)
+        status_code = 404 if not result.get('success') else 200
+        return jsonify(result), status_code
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+def get_member_data(member_id):
+    """Get member data from database"""
+    conn = None
+    try:
+        conn = db.get_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            SELECT id, name, email, role, created_at FROM members WHERE id = %s
+        ''', (member_id,))
+        member = cur.fetchone()
+        
+        if not member:
+            return {
+                "success": False,
+                'message': 'Member not found'
+            }
+        
+        cur.close()
+        return {
+            "success": True,
+            "data": {
+                "id": member[0],
+                "name": member[1],
+                "email": member[2],
+                "role": member[3],
+                "created_at": str(member[4])
+            },
+            'message': 'Member data retrieved successfully'
+        }
+        
+    except Exception as e:
+        raise
+    finally:
+        if conn:
+            db.return_connection(conn)
