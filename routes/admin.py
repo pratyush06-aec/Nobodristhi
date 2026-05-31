@@ -127,9 +127,13 @@ def get_all_complete_news():
                 try:
                     location = json.loads(location)
                 except:
-                    location = {}
+                    location = []
             elif location is None:
-                location = {}
+                location = []
+            
+            # Convert floats to strings in location array
+            if isinstance(location, list):
+                location = [str(item) if isinstance(item, float) else item for item in location]
             
             news_list.append({
                 'complete_id': complete_id,
@@ -198,14 +202,18 @@ def move_to_complete(processed_id, img_index=None):
         (p_id, raw_id, breaking, summary, description, 
          location, reporter_id, img_url, source, created_at) = report
         
-        # Convert location JSONB to proper JSON dict
+        # Convert location JSONB to proper JSON array
         if isinstance(location, str):
             try:
                 location = json.loads(location)
             except:
-                location = {}
+                location = []
         elif location is None:
-            location = {}
+            location = []
+        
+        # Convert floats to strings in location array
+        if isinstance(location, list):
+            location = [str(item) if isinstance(item, float) else item for item in location]
         
         complete_id = generate_complete_id()
         
@@ -238,13 +246,16 @@ def move_to_complete(processed_id, img_index=None):
         
         is_breaking = breaking.lower() in ['true', '1', 'yes'] if breaking else False
         
+        # Convert location to JSON string for JSONB insertion
+        location_json = json.dumps(location) if location else json.dumps([])
+        
         cur.execute('''
             INSERT INTO complete_news 
             (complete_id, processed_id, raw_id, breaking, summary, description, 
              location, reporter_id, img_url, source, is_breaking, created_at)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (complete_id, p_id, raw_id, breaking, summary, description, 
-              location, reporter_id, final_img_url, source, is_breaking, created_at))
+              location_json, reporter_id, final_img_url, source, is_breaking, created_at))
         
         cur.execute('''
             UPDATE processed_reports
