@@ -116,6 +116,49 @@ def list_complete_news():
             'message': str(e)
         }), 500
 
+@bp.route('/list-daily', methods=['POST'])
+def list_complete_news_daily():
+    try:
+        print("\n🔵 [LIST_COMPLETE_NEWS_DAILY] Request received")
+        
+        data = request.get_json()
+        print(f"📥 [LIST_COMPLETE_NEWS_DAILY] Raw data: {data}")
+        
+        if data is None:
+            print("❌ [LIST_COMPLETE_NEWS_DAILY] Invalid JSON format")
+            return jsonify({
+                'success': False,
+                'message': 'Invalid JSON format'
+            }), 400
+        
+        timestamp = data.get('timestamp')
+        print(f"📥 [LIST_COMPLETE_NEWS_DAILY] timestamp={timestamp}")
+        
+        if not timestamp:
+            print("❌ [LIST_COMPLETE_NEWS_DAILY] Missing timestamp")
+            return jsonify({
+                'success': False,
+                'message': 'Missing required field: timestamp'
+            }), 400
+        
+        result = get_complete_news_by_date(timestamp)
+        print(f"✅ [LIST_COMPLETE_NEWS_DAILY] Found {len(result)} records")
+        
+        return jsonify({
+            'success': True,
+            'data': result,
+            'count': len(result)
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ [LIST_COMPLETE_NEWS_DAILY] Exception: {type(e).__name__}: {str(e)}")
+        import traceback
+        print(f"📍 [LIST_COMPLETE_NEWS_DAILY] Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 def get_all_complete_news():
     conn = None
     try:
@@ -169,6 +212,99 @@ def get_all_complete_news():
         return news_list
         
     except Exception as e:
+        raise
+    finally:
+        if conn:
+            db.return_connection(conn)
+
+def get_complete_news_by_date(timestamp):
+    conn = None
+    try:
+        from datetime import datetime
+        
+        print(f"🔄 [GET_COMPLETE_NEWS_BY_DATE] Parsing timestamp: {timestamp}")
+        
+        # Parse timestamp - handle both ISO format and other common formats
+        if isinstance(timestamp, str):
+            try:
+                # Try ISO format first (YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD)
+                if 'T' in timestamp:
+                    dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                else:
+                    dt = datetime.fromisoformat(timestamp)
+            except:
+                # Try other common formats
+                try:
+                    dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                except:
+                    dt = datetime.strptime(timestamp, '%Y-%m-%d')
+        else:
+            dt = datetime.fromtimestamp(timestamp)
+        
+        year = dt.year
+        month = dt.month
+        day = dt.day
+        
+        print(f"✅ [GET_COMPLETE_NEWS_BY_DATE] Extracted date: {year}-{month:02d}-{day:02d}")
+        
+        conn = db.get_connection()
+        cur = conn.cursor()
+        
+        # Query complete_news where created_at matches the given date
+        cur.execute('''
+            SELECT complete_id, processed_id, raw_id, breaking, summary, 
+                   description, location, reporter_id, img_url, source, 
+                   created_at, approved_at
+            FROM complete_news
+            WHERE EXTRACT(YEAR FROM created_at) = %s
+              AND EXTRACT(MONTH FROM created_at) = %s
+              AND EXTRACT(DAY FROM created_at) = %s
+            ORDER BY created_at DESC
+        ''', (year, month, day))
+        
+        rows = cur.fetchall()
+        cur.close()
+        
+        print(f"🔍 [GET_COMPLETE_NEWS_BY_DATE] Found {len(rows)} records for {year}-{month:02d}-{day:02d}")
+        
+        news_list = []
+        for row in rows:
+            (complete_id, processed_id, raw_id, breaking, summary, 
+             description, location, reporter_id, img_url, source, 
+             created_at, approved_at) = row
+            
+            if isinstance(location, str):
+                try:
+                    location = json.loads(location)
+                except:
+                    location = []
+            elif location is None:
+                location = []
+            
+            # Convert floats to strings in location array
+            if isinstance(location, list):
+                location = [str(item) if isinstance(item, float) else item for item in location]
+            
+            news_list.append({
+                'complete_id': complete_id,
+                'processed_id': processed_id,
+                'raw_id': raw_id,
+                'breaking': breaking,
+                'summary': summary,
+                'description': description,
+                'location': location,
+                'reporter_id': reporter_id,
+                'img_url': img_url,
+                'source': source,
+                'created_at': str(created_at) if created_at else None,
+                'approved_at': str(approved_at) if approved_at else None
+            })
+        
+        print(f"✅ [GET_COMPLETE_NEWS_BY_DATE] Returning {len(news_list)} records")
+        return news_list
+        
+    except Exception as e:
+        print(f"❌ [GET_COMPLETE_NEWS_BY_DATE] Exception: {type(e).__name__}: {str(e)}")
         raise
     finally:
         if conn:
