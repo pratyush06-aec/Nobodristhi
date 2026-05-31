@@ -6,6 +6,7 @@ from routes.member import bp as member_bp
 from routes.raw import bp as raw_bp
 from routes.processed import bp as processed_bp
 from routes.admin import bp as admin_bp
+from routes.template import bp as template_bp
 from database import db
 from handlers.process import init_tables, processing_task
 from dotenv import load_dotenv
@@ -30,11 +31,10 @@ app.register_blueprint(member_bp)
 app.register_blueprint(raw_bp)
 app.register_blueprint(processed_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(template_bp)
 
 @app.before_request
 def validate_request():
-    """Validate incoming requests and reject obviously malformed ones"""
-    # Allow preflight CORS requests
     if request.method == 'OPTIONS':
         return None
     
