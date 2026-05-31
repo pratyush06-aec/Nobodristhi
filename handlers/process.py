@@ -73,6 +73,7 @@ def init_tables():
                 img_url TEXT,
                 source TEXT,
                 is_breaking BOOLEAN,
+                voice_url TEXT,
                 created_at TIMESTAMP,
                 approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
