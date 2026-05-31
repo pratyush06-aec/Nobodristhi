@@ -20,9 +20,7 @@ def get_all_processed():
 def fetch_all_processed_reports():
     conn = None
     try:
-        print(f"\n🔵 [FETCH_ALL_PROCESSED_REPORTS] Starting fetch")
         
-        print("🔌 [FETCH_ALL_PROCESSED_REPORTS] Getting database connection...")
         conn = db.get_connection()
         cur = conn.cursor()
         print("✅ [FETCH_ALL_PROCESSED_REPORTS] Connection acquired")
@@ -43,9 +41,13 @@ def fetch_all_processed_reports():
                 try:
                     location = json.loads(location)
                 except:
-                    location = {}
+                    location = []
             elif location is None:
-                location = {}
+                location = []
+            
+            # Convert floats to strings in location array
+            if isinstance(location, list):
+                location = [str(item) if isinstance(item, float) else item for item in location]
             
             img_url = row[7]
             if isinstance(img_url, str):
@@ -182,9 +184,13 @@ def fetch_processed_report_by_id(processed_id):
             try:
                 location = json.loads(location)
             except:
-                location = {}
+                location = []
         elif location is None:
-            location = {}
+            location = []
+        
+        # Convert floats to strings in location array
+        if isinstance(location, list):
+            location = [str(item) if isinstance(item, float) else item for item in location]
         
         # Handle img_url - similarly handle JSONB if present
         img_url = row[7]
@@ -207,6 +213,7 @@ def fetch_processed_report_by_id(processed_id):
                 'breaking': row[2],
                 'summary': row[3],
                 'description': row[4],
+                'location': location,
                 'reporter_id': row[6],
                 'img_url': img_url,
                 'source': row[8],
