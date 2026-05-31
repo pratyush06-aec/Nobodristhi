@@ -1,4 +1,4 @@
-# Synchronicity - Full Stack Project
+# Synchronicity - An AI Powered News Control and Management System
 
 A comprehensive news processing and verification system composed of three integrated services: **Backend API**, **Search Service**, and **Frontend Dashboard**. The system handles raw reports, processes them with ML algorithms, performs image verification, and provides admin management capabilities.
 
