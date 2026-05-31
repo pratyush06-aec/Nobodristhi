@@ -29,6 +29,7 @@ def fetch_all_processed_reports():
         cur.execute('''
             SELECT processed_id, raw_id, breaking, summary, description, location, reporter_id, img_url, source, created_at
             FROM processed_reports
+            WHERE is_approved = 0
             ORDER BY created_at DESC
         ''')
         rows = cur.fetchall()
