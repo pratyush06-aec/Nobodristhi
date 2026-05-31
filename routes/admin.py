@@ -128,6 +128,8 @@ def get_all_complete_news():
                     location = json.loads(location)
                 except:
                     location = {}
+            elif location is None:
+                location = {}
             
             news_list.append({
                 'complete_id': complete_id,
@@ -196,6 +198,15 @@ def move_to_complete(processed_id, img_index=None):
         (p_id, raw_id, breaking, summary, description, 
          location, reporter_id, img_url, source, created_at) = report
         
+        # Convert location JSONB to proper JSON dict
+        if isinstance(location, str):
+            try:
+                location = json.loads(location)
+            except:
+                location = {}
+        elif location is None:
+            location = {}
+        
         complete_id = generate_complete_id()
         
         final_img_url = None
@@ -244,12 +255,43 @@ def move_to_complete(processed_id, img_index=None):
         conn.commit()
         cur.close()
         
-        return {
+        # Fetch the complete record to return with proper JSON
+        cur2 = conn.cursor()
+        cur2.execute('''SELECT complete_id, processed_id, raw_id, breaking, summary, description, location, reporter_id, img_url, source, created_at, approved_at FROM complete_news WHERE complete_id = %s''', (complete_id,))
+        complete_record = cur2.fetchone()
+        cur2.close()
+        
+        return_data = {
             'success': True,
             'message': 'Report approved and moved to complete_news',
             'complete_id': complete_id,
             'processed_id': processed_id
         }
+        
+        if complete_record:
+            location_data = complete_record[6]
+            if isinstance(location_data, str):
+                try:
+                    location_data = json.loads(location_data)
+                except:
+                    location_data = {}
+            
+            return_data['data'] = {
+                'complete_id': complete_record[0],
+                'processed_id': complete_record[1],
+                'raw_id': complete_record[2],
+                'breaking': complete_record[3],
+                'summary': complete_record[4],
+                'description': complete_record[5],
+                'location': location_data,
+                'reporter_id': complete_record[7],
+                'img_url': complete_record[8],
+                'source': complete_record[9],
+                'created_at': str(complete_record[10]) if complete_record[10] else None,
+                'approved_at': str(complete_record[11]) if complete_record[11] else None
+            }
+        
+        return return_data
         
     except Exception as e:
         if conn:
@@ -266,7 +308,8 @@ def mark_as_rejected(processed_id):
         cur = conn.cursor()
         
         cur.execute('''
-            SELECT processed_id FROM processed_reports
+            SELECT processed_id, raw_id, breaking, summary, description, location, reporter_id, img_url, source, created_at
+            FROM processed_reports
             WHERE processed_id = %s
         ''', (processed_id,))
         
@@ -289,11 +332,41 @@ def mark_as_rejected(processed_id):
         conn.commit()
         cur.close()
         
+        # Convert location JSONB to proper JSON dict for response
+        location_data = report[5]
+        if isinstance(location_data, str):
+            try:
+                location_data = json.loads(location_data)
+            except:
+                location_data = {}
+        elif location_data is None:
+            location_data = {}
+        
+        # Convert img_url JSONB to proper JSON for response
+        img_url_data = report[7]
+        if isinstance(img_url_data, str):
+            try:
+                img_url_data = json.loads(img_url_data)
+            except:
+                img_url_data = None
+        
         return {
             'success': True,
             'message': 'Report rejected successfully',
             'processed_id': processed_id,
-            'is_approved': 2
+            'is_approved': 2,
+            'data': {
+                'processed_id': report[0],
+                'raw_id': report[1],
+                'breaking': report[2],
+                'summary': report[3],
+                'description': report[4],
+                'location': location_data,
+                'reporter_id': report[6],
+                'img_url': img_url_data,
+                'source': report[8],
+                'created_at': str(report[9]) if report[9] else None
+            }
         }
         
     except Exception as e:

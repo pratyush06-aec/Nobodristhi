@@ -6,3 +6,4 @@ __pycache__/
 cloner.py
 endpoints.md
 tokens.json
+test_admin.py

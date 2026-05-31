@@ -7,10 +7,7 @@ bp = Blueprint('processed', __name__, url_prefix='/processed')
 @bp.route('/', methods=['GET'])
 def get_all_processed():
     try:
-        print("\n🔵 [GET_ALL_PROCESSED] Request received")
         result = fetch_all_processed_reports()
-        print(f"✅ [GET_ALL_PROCESSED] Retrieved {len(result.get('data', []))} reports")
-        
         return jsonify(result), 200
         
     except Exception as e:
@@ -46,14 +43,20 @@ def fetch_all_processed_reports():
                 try:
                     location = json.loads(location)
                 except:
-                    location = None
+                    location = {}
+            elif location is None:
+                location = {}
             
             img_url = row[7]
             if isinstance(img_url, str):
                 try:
                     img_url = json.loads(img_url)
                 except:
-                    img_url = None
+                    img_url = []
+            elif img_url is None:
+                img_url = []
+            elif not isinstance(img_url, list):
+                img_url = [img_url] if img_url else []
             
             reports_list.append({
                 'processed_id': row[0],
@@ -179,7 +182,9 @@ def fetch_processed_report_by_id(processed_id):
             try:
                 location = json.loads(location)
             except:
-                location = None
+                location = {}
+        elif location is None:
+            location = {}
         
         # Handle img_url - similarly handle JSONB if present
         img_url = row[7]
@@ -187,7 +192,11 @@ def fetch_processed_report_by_id(processed_id):
             try:
                 img_url = json.loads(img_url)
             except:
-                img_url = None
+                img_url = []
+        elif img_url is None:
+            img_url = []
+        elif not isinstance(img_url, list):
+            img_url = [img_url] if img_url else []
         
         return {
             "success": True,
