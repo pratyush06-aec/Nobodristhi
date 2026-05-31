@@ -1,8 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from database.pool import db
 import json
 import string
 import secrets
+import os
+from handlers.voice import generate_voice_file, get_voice_file_path
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -159,6 +161,31 @@ def list_complete_news_daily():
             'message': str(e)
         }), 500
 
+@bp.route('/voices/<complete_id>.mp3', methods=['GET'])
+def get_voice_file(complete_id):
+    """Serve voice file for a complete news item"""
+    try:
+        print(f"\n🔵 [GET_VOICE_FILE] Request for {complete_id}")
+        
+        voice_path = get_voice_file_path(complete_id)
+        
+        if not voice_path or not os.path.exists(voice_path):
+            print(f"❌ [GET_VOICE_FILE] Voice file not found for {complete_id}")
+            return jsonify({
+                'success': False,
+                'message': 'Voice file not found'
+            }), 404
+        
+        print(f"✅ [GET_VOICE_FILE] Sending voice file from {voice_path}")
+        return send_file(voice_path, mimetype='audio/mpeg', as_attachment=False)
+        
+    except Exception as e:
+        print(f"❌ [GET_VOICE_FILE] Exception: {type(e).__name__}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 def get_all_complete_news():
     conn = None
     try:
@@ -167,7 +194,7 @@ def get_all_complete_news():
         
         cur.execute('''
             SELECT complete_id, processed_id, raw_id, breaking, summary, 
-                   description, location, reporter_id, img_url, source, 
+                   description, location, reporter_id, img_url, source, voice_url,
                    created_at, approved_at
             FROM complete_news
             ORDER BY approved_at DESC
@@ -179,7 +206,7 @@ def get_all_complete_news():
         news_list = []
         for row in rows:
             (complete_id, processed_id, raw_id, breaking, summary, 
-             description, location, reporter_id, img_url, source, 
+             description, location, reporter_id, img_url, source, voice_url,
              created_at, approved_at) = row
             
             if isinstance(location, str):
@@ -205,6 +232,7 @@ def get_all_complete_news():
                 'reporter_id': reporter_id,
                 'img_url': img_url,
                 'source': source,
+                'voice_url': voice_url,
                 'created_at': str(created_at) if created_at else None,
                 'approved_at': str(approved_at) if approved_at else None
             })
@@ -253,7 +281,7 @@ def get_complete_news_by_date(timestamp):
         # Query complete_news where created_at matches the given date
         cur.execute('''
             SELECT complete_id, processed_id, raw_id, breaking, summary, 
-                   description, location, reporter_id, img_url, source, 
+                   description, location, reporter_id, img_url, source, voice_url,
                    created_at, approved_at
             FROM complete_news
             WHERE EXTRACT(YEAR FROM created_at) = %s
@@ -270,7 +298,7 @@ def get_complete_news_by_date(timestamp):
         news_list = []
         for row in rows:
             (complete_id, processed_id, raw_id, breaking, summary, 
-             description, location, reporter_id, img_url, source, 
+             description, location, reporter_id, img_url, source, voice_url,
              created_at, approved_at) = row
             
             if isinstance(location, str):
@@ -296,6 +324,7 @@ def get_complete_news_by_date(timestamp):
                 'reporter_id': reporter_id,
                 'img_url': img_url,
                 'source': source,
+                'voice_url': voice_url,
                 'created_at': str(created_at) if created_at else None,
                 'approved_at': str(approved_at) if approved_at else None
             })
@@ -332,6 +361,7 @@ def move_to_complete(processed_id, img_index=None):
                 img_url TEXT,
                 source TEXT,
                 is_breaking BOOLEAN,
+                voice_url TEXT,
                 created_at TIMESTAMP,
                 approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -420,14 +450,24 @@ def move_to_complete(processed_id, img_index=None):
         location_json = json.dumps(location) if location else json.dumps([])
         print(f"✅ [MOVE_TO_COMPLETE] location_json prepared: {location_json}")
         
+        # Generate voice file from description
+        print(f"🔄 [MOVE_TO_COMPLETE] Generating voice file...")
+        voice_result = generate_voice_file(description, complete_id)
+        voice_url = None
+        if voice_result.get('success'):
+            voice_url = f"/admin/voices/{complete_id}.mp3"
+            print(f"✅ [MOVE_TO_COMPLETE] Voice file generated: {voice_url}")
+        else:
+            print(f"⚠️  [MOVE_TO_COMPLETE] Voice generation failed: {voice_result.get('message')}")
+        
         print(f"🔄 [MOVE_TO_COMPLETE] Inserting into complete_news...")
         cur.execute('''
             INSERT INTO complete_news 
             (complete_id, processed_id, raw_id, breaking, summary, description, 
-             location, reporter_id, img_url, source, is_breaking, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             location, reporter_id, img_url, source, is_breaking, voice_url, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (complete_id, p_id, raw_id, breaking, summary, description, 
-              location_json, reporter_id, final_img_url, source, is_breaking, created_at))
+              location_json, reporter_id, final_img_url, source, is_breaking, voice_url, created_at))
         print(f"✅ [MOVE_TO_COMPLETE] Inserted into complete_news")
         
         print(f"🔄 [MOVE_TO_COMPLETE] Updating processed_reports...")
@@ -444,7 +484,7 @@ def move_to_complete(processed_id, img_index=None):
         
         # Fetch the complete record to return with proper JSON
         cur2 = conn.cursor()
-        cur2.execute('''SELECT complete_id, processed_id, raw_id, breaking, summary, description, location, reporter_id, img_url, source, created_at, approved_at FROM complete_news WHERE complete_id = %s''', (complete_id,))
+        cur2.execute('''SELECT complete_id, processed_id, raw_id, breaking, summary, description, location, reporter_id, img_url, source, voice_url, created_at, approved_at FROM complete_news WHERE complete_id = %s''', (complete_id,))
         complete_record = cur2.fetchone()
         cur2.close()
         print(f"✅ [MOVE_TO_COMPLETE] Fetched complete record")
@@ -475,8 +515,9 @@ def move_to_complete(processed_id, img_index=None):
                 'reporter_id': complete_record[7],
                 'img_url': complete_record[8],
                 'source': complete_record[9],
-                'created_at': str(complete_record[10]) if complete_record[10] else None,
-                'approved_at': str(complete_record[11]) if complete_record[11] else None
+                'voice_url': complete_record[10],
+                'created_at': str(complete_record[11]) if complete_record[11] else None,
+                'approved_at': str(complete_record[12]) if complete_record[12] else None
             }
         
         print(f"✅ [MOVE_TO_COMPLETE] Returning success response")
