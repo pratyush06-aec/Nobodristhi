@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="NoboDorshi Logo" width="250"/>
+  <img src="assets/logo.jpg" alt="NoboDorshi Logo" width="250"/>
 </p>
 
 <h1 align="center">NoboDorshi - AI Powered News Control & Management System</h1>
