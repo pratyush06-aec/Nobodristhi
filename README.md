@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/logo.jpg" alt="NoboDorshi Logo" width="250"/>
+  <img src="assets/logo.jpg" alt="nobodristhi Logo" width="250"/>
 </p>
 
-<h1 align="center">NoboDorshi - AI Powered News Control & Management System</h1>
+<h1 align="center">NoboDristhi - AI Powered News Control & Management System</h1>
 
 <p align="center">
   A comprehensive news processing and verification backend API. The system handles raw reports, processes them with intelligent Machine Learning algorithms, performs reverse-image media verification, groups reports by geographical proximity, and provides robust administrative management capabilities.
@@ -26,7 +26,7 @@
 
 ## 🎯 Project Overview
 
-**NoboDorshi** serves as the intelligent core backend for a streamlined, secure news verification pipeline. 
+**NoboDristhi** serves as the intelligent core backend for a streamlined, secure news verification pipeline. 
 
 It provides secure REST API endpoints for user/member management, raw news submission (with precise geolocation and image payload capabilities), automatic background AI-based summarization and clustering, and administrative moderation to approve or reject processed news items into their final state.
 
@@ -96,7 +96,7 @@ Administrators query the `processed_reports` table via the `/admin` routes. Upon
 ## 📁 Directory Structure
 
 ```text
-NoboDorshi/
+nobodristhi/
 ├── assets/                 # Static assets (logos, screenshots)
 ├── database/               # DB connection layer
 │   └── pool.py             # Custom Threaded PostgreSQL connection pooler
@@ -198,7 +198,7 @@ PORT=5000
 DEBUG=True
 
 # Database Configuration (Local or Supabase)
-DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/nobodorshi
+DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/nobodristhi
 
 # Supabase Storage Configuration
 SUPABASE_URL=https://your-project.supabase.co
@@ -229,7 +229,7 @@ python main.py
 
 ## 🤝 Contribution Guidelines
 
-NoboDorshi welcomes contributions! To contribute:
+nobodristhi welcomes contributions! To contribute:
 
 1. Fork the repository and create your feature branch: `git checkout -b feature/amazing-feature`.
 2. Ensure any new API routes properly request and release database connections using the `db.get_connection()` and `db.return_connection(conn)` pattern.
@@ -244,4 +244,4 @@ NoboDorshi welcomes contributions! To contribute:
 
 ## 📄 License
 
-This project is part of the NoboDorshi ecosystem. All rights reserved.
+This project is part of the nobodristhi ecosystem. All rights reserved.
